@@ -1,18 +1,20 @@
 trigger:
-- none  # Manual trigger only for this test
+- none  # Manual trigger only for now
 
 pool:
-  vmImage: 'ubuntu-latest'
+  name: Default  # This tells Azure DevOps to use your self-hosted agent in the Default pool
 
 steps:
+- script: echo "✅ Running on Chioma's Self-Hosted Agent!"
+  displayName: 'Print success message'
+
 - task: AzureCLI@2
-  displayName: 'Test Azure CLI Connection'
+  displayName: 'Test Azure CLI connection'
   inputs:
-    azureSubscription: 'online_boutique'  # Replace this!
+    azureSubscription: 'cadd-devops'  # Replace with your service connection name
     scriptType: 'bash'
     scriptLocation: 'inlineScript'
     inlineScript: |
-      echo "✅ Testing Azure Service Connection..."
+      echo "✅ Connected to Azure"
       az account show
       az group list --output table
-      echo "✅ Service connection is working!"
