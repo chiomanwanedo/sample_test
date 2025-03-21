@@ -1,0 +1,18 @@
+trigger:
+- none  # Manual trigger only for this test
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- task: AzureCLI@2
+  displayName: 'Test Azure CLI Connection'
+  inputs:
+    azureSubscription: 'online_boutique'  # Replace this!
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      echo "✅ Testing Azure Service Connection..."
+      az account show
+      az group list --output table
+      echo "✅ Service connection is working!"
