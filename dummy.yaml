@@ -11,7 +11,7 @@ steps:
 - task: AzureCLI@2
   displayName: 'Test Azure CLI connection'
   inputs:
-    azureSubscription: 'cadd-devops'  # Replace with your service connection name
+    azureSubscription: 'online_boutique'  # Replace with your service connection name
     scriptType: 'bash'
     scriptLocation: 'inlineScript'
     inlineScript: |
