@@ -1,0 +1,23 @@
+trigger:
+  branches:
+    include:
+      - main
+
+stages:
+  - stage: CloneAndTest
+    jobs:
+      - job: CloneJob
+        pool:
+          name: 'Default'
+        steps:
+          - checkout: self  # This checks out Repo A (agent repo)
+
+          - script: |
+              echo "✅ Cloning microservices-demo repo (Repo B)..."
+              git clone https://github.com/chiomanwanedo/microservices-demo.git
+            displayName: 'Clone Microservices Repo'
+
+          - script: |
+              echo "✅ Successfully cloned! Listing contents:"
+              ls -l microservices-demo
+            displayName: 'List Cloned Repo Content'
