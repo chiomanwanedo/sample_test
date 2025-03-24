@@ -1,52 +1,31 @@
-trigger:
-  branches:
-    include:
-      - main
+- stage: BuildAndPush
+  dependsOn: CloneMicroservicesRepo
+  jobs:
+    - job: DockerBuildPush
+      pool:
+        name: 'Default'
+      steps:
+        - checkout: self
 
-stages:
-  - stage: CloneMicroservicesRepo
-    jobs:
-      - job: CloneJob
-        pool:
-          name: 'Default'
-        steps:
-          - checkout: self  # Repo A (Agent Repo)
+        - download: current
+          artifact: MicroservicesRepo
 
-          - script: |
-              echo "✅ Cloning Microservices Repo..."
-              git clone https://github.com/chiomanwanedo/microservices-demo.git
-            displayName: 'Clone Microservices Repo'
+        - task: Docker@2
+          displayName: 'Login to ACR'
+          inputs:
+            command: 'login'
+            containerRegistry: 'online-boutique'
 
-          - script: |
-              echo "✅ Successfully cloned! Listing contents:"
-              ls -l microservices-demo
-            displayName: 'List Cloned Repo Content'
-
-  - stage: BuildAndPush
-    dependsOn: CloneMicroservicesRepo
-    jobs:
-      - job: DockerBuildPush
-        pool:
-          name: 'Default'
-        steps:
-          - checkout: self  # Repo A again, safe to include
-
-          - task: Docker@2
-            displayName: 'Login to ACR'
-            inputs:
-              command: 'login'
-              containerRegistry: 'online-boutique'  # Your Azure DevOps service connection name
-
-          - script: |
-              echo "✅ Starting Docker Build & Push for Microservices..."
-              cd microservices-demo/src
-              for service in *; do
-                if [ -d "$service" ] && [ -f "$service/Dockerfile" ]; then
-                  echo "🚀 Building and Pushing $service ..."
-                  docker build -t chiomaacr.azurecr.io/$service:latest $service
-                  docker push chiomaacr.azurecr.io/$service:latest
-                else
-                  echo "⚠️ Skipping $service - Dockerfile not found."
-                fi
-              done
-            displayName: 'Build & Push Microservices'
+        - script: |
+            echo "✅ Starting Docker Build & Push for Microservices..."
+            cd MicroservicesRepo/src
+            for service in *; do
+              if [ -d "$service" ] && [ -f "$service/Dockerfile" ]; then
+                echo "🚀 Building and Pushing $service ..."
+                docker build -t chiomaacr.azurecr.io/$service:latest $service
+                docker push chiomaacr.azurecr.io/$service:latest
+              else
+                echo "⚠️ Skipping $service - Dockerfile not found."
+              fi
+            done
+          displayName: 'Build & Push Microservices'
