@@ -4,50 +4,46 @@ trigger:
       - main
 
 stages:
-  - stage: CloneAndTest
+  - stage: BuildAndPush
+    displayName: 'Build and Push Microservices'
     jobs:
-      - job: CloneJob
+      - job: DockerBuild
+        displayName: 'Sequential Docker Build & Push'
         pool:
-          name: 'Default'
+          name: 'Default'  # Your self-hosted agent pool
         steps:
           - checkout: self
 
           - script: |
-              echo "✅ Cloning microservices-demo repo (Repo B)..."
+              echo "✅ Cloning Microservices Repo..."
               git clone https://github.com/chiomanwanedo/microservices-demo.git
             displayName: 'Clone Microservices Repo'
 
-          - publish: microservices-demo
-            artifact: microservices-repo
-
-  - stage: BuildAndPush
-    dependsOn: CloneAndTest
-    jobs:
-      - job: DockerBuild
-        pool:
-          name: 'Default'
-        steps:
-          - checkout: self
-
-          - download: current
-            artifact: microservices-repo
-
-          - task: Docker@2
-            displayName: 'Login to ACR'
-            inputs:
-              command: login
-              containerRegistry: 'online-boutique'
-
           - script: |
-              cd $(Pipeline.Workspace)/microservices-repo/src
-              for service in *; do
-                if [ -f "$service/Dockerfile" ]; then
-                  echo "🔨 Building $service..."
-                  docker build -t chiomaacr.azurecr.io/$service:latest $service
-                  echo "🚀 Pushing $service to ACR..."
-                  docker push chiomaacr.azurecr.io/$service:latest
-                else
-                  echo "⚠️ No Dockerfile found for $service, skipping."
-                fi
-              done
-            displayName: 'Build & Push Microservices'
+              echo "✅ Logging into ACR..."
+              az acr login --name chiomaacr
+            displayName: 'ACR Login'
+
+          - ${{ each service in parameters.services }}:
+              - script: |
+                  echo "🚀 Building and Pushing ${{ service }}"
+                  docker buildx build \
+                    -t chiomaacr.azurecr.io/${{ service }}:latest \
+                    -f microservices-demo/src/${{ service }}/Dockerfile \
+                    microservices-demo/src/${{ service }} --push
+                displayName: "Build & Push ${{ service }}"
+
+parameters:
+  - name: services
+    type: object
+    default:
+      - adservice
+      - cartservice
+      - checkoutservice
+      - currencyservice
+      - emailservice
+      - frontend
+      - paymentservice
+      - productcatalogservice
+      - recommendationservice
+      - shippingservice
