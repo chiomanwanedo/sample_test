@@ -10,7 +10,7 @@ stages:
         pool:
           name: 'Default'
         steps:
-          - checkout: self  # This checks out Repo A (agent repo)
+          - checkout: self  # Checkout the agent repo
 
           - script: |
               echo "✅ Cloning microservices-demo repo (Repo B)..."
