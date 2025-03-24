@@ -4,26 +4,49 @@ trigger:
       - main
 
 stages:
-  - stage: CloneAndBuild
+  - stage: CloneMicroservicesRepo
     jobs:
       - job: CloneJob
         pool:
           name: 'Default'
         steps:
-          - checkout: self  # Checkout the agent repo (Repo A)
+          - checkout: self  # Repo A (Agent Repo)
 
           - script: |
-              echo "✅ Cloning microservices-demo repo (Repo B) with retry and shallow clone..."
-              git config --global http.postBuffer 524288000  # Increase buffer size to handle large repo
-              for i in {1..3}; do
-                git clone --depth=1 https://github.com/chiomanwanedo/microservices-demo.git && break || {
-                  echo "⚠️ Clone failed. Retrying in 10 seconds... ($i/3)"
-                  sleep 10
-                }
-              done
-            displayName: 'Clone Microservices Repo with Retry'
+              echo "✅ Cloning Microservices Repo..."
+              git clone https://github.com/chiomanwanedo/microservices-demo.git
+            displayName: 'Clone Microservices Repo'
 
           - script: |
               echo "✅ Successfully cloned! Listing contents:"
               ls -l microservices-demo
             displayName: 'List Cloned Repo Content'
+
+  - stage: BuildAndPush
+    dependsOn: CloneMicroservicesRepo
+    jobs:
+      - job: DockerBuildPush
+        pool:
+          name: 'Default'
+        steps:
+          - checkout: self  # Repo A again, safe to include
+
+          - task: Docker@2
+            displayName: 'Login to ACR'
+            inputs:
+              command: 'login'
+              containerRegistry: 'online-boutique'  # Your Azure DevOps service connection name
+
+          - script: |
+              echo "✅ Starting Docker Build & Push for Microservices..."
+              cd microservices-demo/src
+              for service in *; do
+                if [ -d "$service" ] && [ -f "$service/Dockerfile" ]; then
+                  echo "🚀 Building and Pushing $service ..."
+                  docker build -t chiomaacr.azurecr.io/$service:latest $service
+                  docker push chiomaacr.azurecr.io/$service:latest
+                else
+                  echo "⚠️ Skipping $service - Dockerfile not found."
+                fi
+              done
+            displayName: 'Build & Push Microservices'
