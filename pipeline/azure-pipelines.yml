@@ -3,36 +3,6 @@ trigger:
     include:
       - main
 
-stages:
-  - stage: BuildAndPush
-    displayName: 'Build and Push Microservices'
-    jobs:
-      - job: DockerBuild
-        displayName: 'Sequential Docker Build & Push'
-        pool:
-          name: 'Default'  # Your self-hosted agent pool
-        steps:
-          - checkout: self
-
-          - script: |
-              echo "✅ Cloning Microservices Repo..."
-              git clone https://github.com/chiomanwanedo/microservices-demo.git
-            displayName: 'Clone Microservices Repo'
-
-          - script: |
-              echo "✅ Logging into ACR..."
-              az acr login --name chiomaacr
-            displayName: 'ACR Login'
-
-          - ${{ each service in parameters.services }}:
-              - script: |
-                  echo "🚀 Building and Pushing ${{ service }}"
-                  docker buildx build \
-                    -t chiomaacr.azurecr.io/${{ service }}:latest \
-                    -f microservices-demo/src/${{ service }}/Dockerfile \
-                    microservices-demo/src/${{ service }} --push
-                displayName: "Build & Push ${{ service }}"
-
 parameters:
   - name: services
     type: object
@@ -47,3 +17,34 @@ parameters:
       - productcatalogservice
       - recommendationservice
       - shippingservice
+
+stages:
+  - stage: BuildAndPush
+    displayName: 'Build and Push Microservices'
+    jobs:
+      - job: DockerBuild
+        displayName: 'Sequential Docker Build & Push'
+        pool:
+          name: 'Default'  # Your self-hosted agent pool (Vee)
+
+        steps:
+          - checkout: self  # Pull pipeline repo (agent repo)
+
+          - script: |
+              echo "✅ Cloning Microservices Repo..."
+              git clone https://github.com/chiomanwanedo/microservices-demo.git
+            displayName: 'Clone Microservices Repo'
+
+          - script: |
+              echo "✅ Logging into Azure Container Registry (ACR)..."
+              az acr login --name chiomaacr
+            displayName: 'ACR Login'
+
+          - ${{ each service in parameters.services }}:
+              - script: |
+                  echo "🚀 Building and Pushing ${{ service }}"
+                  docker buildx build \
+                    -t chiomaacr.azurecr.io/${{ service }}:latest \
+                    -f microservices-demo/src/${{ service }}/Dockerfile \
+                    microservices-demo/src/${{ service }} --push
+                displayName: "Build & Push ${{ service }}"
