@@ -10,7 +10,7 @@ stages:
         pool:
           name: 'Default'
         steps:
-          - checkout: self  # Repo A (Agent Repo)
+          - checkout: self  # Checkout Repo A (Agent Repo)
 
           - script: |
               echo "✅ Cloning Microservices Repo..."
@@ -40,7 +40,7 @@ stages:
 
           - script: |
               echo "✅ Starting Docker Build & Push for Microservices..."
-              cd MicroservicesRepo/src
+              cd $(Pipeline.Workspace)/MicroservicesRepo/src
               for service in *; do
                 if [ -d "$service" ] && [ -f "$service/Dockerfile" ]; then
                   echo "🚀 Building and Pushing $service ..."
