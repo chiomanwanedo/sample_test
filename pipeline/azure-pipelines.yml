@@ -1,31 +1,53 @@
-- stage: BuildAndPush
-  dependsOn: CloneMicroservicesRepo
-  jobs:
-    - job: DockerBuildPush
-      pool:
-        name: 'Default'
-      steps:
-        - checkout: self
+trigger:
+  branches:
+    include:
+      - main
 
-        - download: current
-          artifact: MicroservicesRepo
+stages:
+  - stage: CloneMicroservicesRepo
+    jobs:
+      - job: CloneJob
+        pool:
+          name: 'Default'
+        steps:
+          - checkout: self  # Repo A (Agent Repo)
 
-        - task: Docker@2
-          displayName: 'Login to ACR'
-          inputs:
-            command: 'login'
-            containerRegistry: 'online-boutique'
+          - script: |
+              echo "✅ Cloning Microservices Repo..."
+              git clone https://github.com/chiomanwanedo/microservices-demo.git
+            displayName: 'Clone Microservices Repo'
 
-        - script: |
-            echo "✅ Starting Docker Build & Push for Microservices..."
-            cd MicroservicesRepo/src
-            for service in *; do
-              if [ -d "$service" ] && [ -f "$service/Dockerfile" ]; then
-                echo "🚀 Building and Pushing $service ..."
-                docker build -t chiomaacr.azurecr.io/$service:latest $service
-                docker push chiomaacr.azurecr.io/$service:latest
-              else
-                echo "⚠️ Skipping $service - Dockerfile not found."
-              fi
-            done
-          displayName: 'Build & Push Microservices'
+          - publish: microservices-demo
+            artifact: MicroservicesRepo
+
+  - stage: BuildAndPush
+    dependsOn: CloneMicroservicesRepo
+    jobs:
+      - job: DockerBuildPush
+        pool:
+          name: 'Default'
+        steps:
+          - checkout: self
+
+          - download: current
+            artifact: MicroservicesRepo
+
+          - task: Docker@2
+            displayName: 'Login to ACR'
+            inputs:
+              command: 'login'
+              containerRegistry: 'online-boutique'  # Replace with your correct ACR service connection name
+
+          - script: |
+              echo "✅ Starting Docker Build & Push for Microservices..."
+              cd MicroservicesRepo/src
+              for service in *; do
+                if [ -d "$service" ] && [ -f "$service/Dockerfile" ]; then
+                  echo "🚀 Building and Pushing $service ..."
+                  docker build -t chiomaacr.azurecr.io/$service:latest $service
+                  docker push chiomaacr.azurecr.io/$service:latest
+                else
+                  echo "⚠️ Skipping $service - Dockerfile not found."
+                fi
+              done
+            displayName: 'Build & Push Microservices'
