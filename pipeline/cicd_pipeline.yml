@@ -29,7 +29,7 @@ stages:
 
     - task: AzureCLI@2
       inputs:
-        azureSubscription: 'online-boutique'  # ✅ Azure DevOps Service Connection
+        azureSubscription: 'chiomaacr'  # ✅ Azure DevOps Service Connection
         scriptType: bash
         scriptLocation: inlineScript
         inlineScript: |
