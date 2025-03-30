@@ -1,0 +1,42 @@
+trigger:
+  branches:
+    include:
+      - main
+
+variables:
+  IMAGE_TAG: $(Build.BuildId)
+
+stages:
+  - stage: BuildAndPush
+    displayName: Build and Push Docker Images to ACR
+    jobs:
+      - job: PushImages
+        displayName: Build & Push vote + result
+        pool:
+          name: Default  # or your self-hosted pool name
+        steps:
+          # ✅ Checkout the GitHub app repo
+          - checkout: https://github.com/chiomanwanedo/example-voting-app.git
+            path: app
+
+          # ✅ Build and push 'vote'
+          - task: Docker@2
+            displayName: Build and Push 'vote' image
+            inputs:
+              containerRegistry: 'dockeracr'
+              repository: 'vote'
+              command: 'buildAndPush'
+              Dockerfile: 'app/vote/Dockerfile'
+              tags: |
+                $(IMAGE_TAG)
+
+          # ✅ Build and push 'result'
+          - task: Docker@2
+            displayName: Build and Push 'result' image
+            inputs:
+              containerRegistry: 'dockeracr'
+              repository: 'result'
+              command: 'buildAndPush'
+              Dockerfile: 'app/result/Dockerfile'
+              tags: |
+                $(IMAGE_TAG)
