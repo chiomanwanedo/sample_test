@@ -3,6 +3,14 @@ trigger:
     include:
       - main
 
+resources:
+  repositories:
+    - repository: votingapp
+      type: github
+      name: chiomanwanedo/example-voting-app
+      ref: main
+      endpoint: github.com_chiomanwanedo  # <-- This must match your GitHub service connection name
+
 variables:
   IMAGE_TAG: $(Build.BuildId)
 
@@ -13,24 +21,21 @@ stages:
       - job: PushImages
         displayName: Build & Push vote + result
         pool:
-          name: Default  # or your self-hosted pool name
+          name: Default  # <-- Your self-hosted agent pool name
         steps:
-          # ✅ Checkout the GitHub app repo
-          - checkout: https://github.com/chiomanwanedo/example-voting-app.git
-            path: app
+          - checkout: votingapp
+            path: app  # This puts your GitHub repo in a folder named "app"
 
-          # ✅ Build and push 'vote'
           - task: Docker@2
             displayName: Build and Push 'vote' image
             inputs:
-              containerRegistry: 'dockeracr'
+              containerRegistry: 'dockeracr'  # Your ACR service connection name
               repository: 'vote'
               command: 'buildAndPush'
               Dockerfile: 'app/vote/Dockerfile'
               tags: |
                 $(IMAGE_TAG)
 
-          # ✅ Build and push 'result'
           - task: Docker@2
             displayName: Build and Push 'result' image
             inputs:
