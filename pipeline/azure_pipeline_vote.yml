@@ -9,7 +9,7 @@ resources:
       type: github
       name: chiomanwanedo/example-voting-app
       ref: main
-      endpoint: github.com_chiomanwanedo  # ✅ GitHub service connection name
+      endpoint: github.com_chiomanwanedo
 
 variables:
   IMAGE_TAG: $(Build.BuildId)
@@ -21,41 +21,41 @@ stages:
       - job: PushImages
         displayName: Build & Push vote, result, and worker
         pool:
-          name: Default  # ✅ Replace if your agent pool has a different name
+          name: Default
         steps:
-          # ✅ Checkout GitHub repo into a safe folder that avoids path collisions
+          # ✅ Checkout into a uniquely named folder to avoid path collisions
           - checkout: votingapp
-            path: src
+            path: votingapp_src
 
-          # ✅ Build and push 'vote' image
+          # ✅ Build and push 'vote'
           - task: Docker@2
             displayName: Build and Push 'vote' image
             inputs:
-              containerRegistry: 'dockeracr'  # ✅ ACR service connection name
+              containerRegistry: 'dockeracr'
               repository: 'vote'
               command: 'buildAndPush'
-              Dockerfile: 'src/vote/Dockerfile'
+              Dockerfile: 'votingapp_src/vote/Dockerfile'
               tags: |
                 $(IMAGE_TAG)
 
-          # ✅ Build and push 'result' image
+          # ✅ Build and push 'result'
           - task: Docker@2
             displayName: Build and Push 'result' image
             inputs:
               containerRegistry: 'dockeracr'
               repository: 'result'
               command: 'buildAndPush'
-              Dockerfile: 'src/result/Dockerfile'
+              Dockerfile: 'votingapp_src/result/Dockerfile'
               tags: |
                 $(IMAGE_TAG)
 
-          # ✅ Build and push 'worker' image
+          # ✅ Build and push 'worker'
           - task: Docker@2
             displayName: Build and Push 'worker' image
             inputs:
               containerRegistry: 'dockeracr'
               repository: 'worker'
               command: 'buildAndPush'
-              Dockerfile: 'src/worker/Dockerfile'
+              Dockerfile: 'votingapp_src/worker/Dockerfile'
               tags: |
                 $(IMAGE_TAG)
