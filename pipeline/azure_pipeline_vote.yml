@@ -10,6 +10,7 @@ resources:
       name: chiomanwanedo/example-voting-app
       ref: main
       endpoint: github.com_chiomanwanedo
+      name: apprepo  # 👈 forces the inner folder to be named "apprepo"
 
 variables:
   IMAGE_TAG: $(Build.BuildId)
@@ -23,8 +24,8 @@ stages:
         pool:
           name: Default
         steps:
-          - checkout: votingapp
-            path: external-repo  # ✅ change this to something UNIQUE
+          - checkout: apprepo
+            path: fetched-app  # ✅ doesn't match anything else
 
           - task: Docker@2
             displayName: Build and Push 'vote' image
@@ -32,7 +33,7 @@ stages:
               containerRegistry: 'dockeracr'
               repository: 'vote'
               command: 'buildAndPush'
-              Dockerfile: 'external-repo/example-voting-app/vote/Dockerfile'
+              Dockerfile: 'fetched-app/vote/Dockerfile'
               tags: |
                 $(IMAGE_TAG)
 
@@ -42,7 +43,7 @@ stages:
               containerRegistry: 'dockeracr'
               repository: 'result'
               command: 'buildAndPush'
-              Dockerfile: 'external-repo/example-voting-app/result/Dockerfile'
+              Dockerfile: 'fetched-app/result/Dockerfile'
               tags: |
                 $(IMAGE_TAG)
 
@@ -52,6 +53,6 @@ stages:
               containerRegistry: 'dockeracr'
               repository: 'worker'
               command: 'buildAndPush'
-              Dockerfile: 'external-repo/example-voting-app/worker/Dockerfile'
+              Dockerfile: 'fetched-app/worker/Dockerfile'
               tags: |
                 $(IMAGE_TAG)
