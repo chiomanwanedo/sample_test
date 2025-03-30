@@ -9,7 +9,7 @@ resources:
       type: github
       name: chiomanwanedo/example-voting-app
       ref: main
-      endpoint: github.com_chiomanwanedo  # ✅ Replace with your GitHub service connection name if needed
+      endpoint: github.com_chiomanwanedo
 
 variables:
   IMAGE_TAG: $(Build.BuildId)
@@ -21,41 +21,37 @@ stages:
       - job: PushImages
         displayName: Build & Push vote, result, and worker
         pool:
-          name: Default  # ✅ Replace if your self-hosted agent pool has a different name
+          name: Default
         steps:
-          # ✅ Checkout the GitHub repo into the 'src' folder to avoid nested path issues
           - checkout: votingapp
-            path: src
+            path: app  # ✅ now checking out into 'app'
 
-          # ✅ Build and push 'vote' image
           - task: Docker@2
             displayName: Build and Push 'vote' image
             inputs:
-              containerRegistry: 'dockeracr'  # ✅ Replace with your ACR service connection name
+              containerRegistry: 'dockeracr'
               repository: 'vote'
               command: 'buildAndPush'
-              Dockerfile: 'src/vote/Dockerfile'
+              Dockerfile: 'app/vote/Dockerfile'
               tags: |
                 $(IMAGE_TAG)
 
-          # ✅ Build and push 'result' image
           - task: Docker@2
             displayName: Build and Push 'result' image
             inputs:
               containerRegistry: 'dockeracr'
               repository: 'result'
               command: 'buildAndPush'
-              Dockerfile: 'src/result/Dockerfile'
+              Dockerfile: 'app/result/Dockerfile'
               tags: |
                 $(IMAGE_TAG)
 
-          # ✅ Build and push 'worker' image
           - task: Docker@2
             displayName: Build and Push 'worker' image
             inputs:
               containerRegistry: 'dockeracr'
               repository: 'worker'
               command: 'buildAndPush'
-              Dockerfile: 'src/worker/Dockerfile'
+              Dockerfile: 'app/worker/Dockerfile'
               tags: |
                 $(IMAGE_TAG)
