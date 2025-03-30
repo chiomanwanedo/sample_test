@@ -9,7 +9,7 @@ resources:
       type: github
       name: chiomanwanedo/example-voting-app
       ref: main
-      endpoint: github.com_chiomanwanedo
+      endpoint: github.com_chiomanwanedo  # ✅ GitHub service connection name
 
 variables:
   IMAGE_TAG: $(Build.BuildId)
@@ -21,37 +21,41 @@ stages:
       - job: PushImages
         displayName: Build & Push vote, result, and worker
         pool:
-          name: Default
+          name: Default  # ✅ Replace if your agent pool has a different name
         steps:
+          # ✅ Checkout GitHub repo into a safe folder that avoids path collisions
           - checkout: votingapp
-            path: app  # ✅ now checking out into 'app'
+            path: src
 
+          # ✅ Build and push 'vote' image
           - task: Docker@2
             displayName: Build and Push 'vote' image
             inputs:
-              containerRegistry: 'dockeracr'
+              containerRegistry: 'dockeracr'  # ✅ ACR service connection name
               repository: 'vote'
               command: 'buildAndPush'
-              Dockerfile: 'app/vote/Dockerfile'
+              Dockerfile: 'src/vote/Dockerfile'
               tags: |
                 $(IMAGE_TAG)
 
+          # ✅ Build and push 'result' image
           - task: Docker@2
             displayName: Build and Push 'result' image
             inputs:
               containerRegistry: 'dockeracr'
               repository: 'result'
               command: 'buildAndPush'
-              Dockerfile: 'app/result/Dockerfile'
+              Dockerfile: 'src/result/Dockerfile'
               tags: |
                 $(IMAGE_TAG)
 
+          # ✅ Build and push 'worker' image
           - task: Docker@2
             displayName: Build and Push 'worker' image
             inputs:
               containerRegistry: 'dockeracr'
               repository: 'worker'
               command: 'buildAndPush'
-              Dockerfile: 'app/worker/Dockerfile'
+              Dockerfile: 'src/worker/Dockerfile'
               tags: |
                 $(IMAGE_TAG)
