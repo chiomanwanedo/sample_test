@@ -23,39 +23,35 @@ stages:
         pool:
           name: Default
         steps:
-          # ✅ Checkout the GitHub repo into a wrapper folder
           - checkout: votingapp
-            path: checkout-folder
+            path: external-repo  # ✅ change this to something UNIQUE
 
-          # ✅ Build and push 'vote' image
           - task: Docker@2
             displayName: Build and Push 'vote' image
             inputs:
               containerRegistry: 'dockeracr'
               repository: 'vote'
               command: 'buildAndPush'
-              Dockerfile: 'checkout-folder/example-voting-app/vote/Dockerfile'
+              Dockerfile: 'external-repo/example-voting-app/vote/Dockerfile'
               tags: |
                 $(IMAGE_TAG)
 
-          # ✅ Build and push 'result' image
           - task: Docker@2
             displayName: Build and Push 'result' image
             inputs:
               containerRegistry: 'dockeracr'
               repository: 'result'
               command: 'buildAndPush'
-              Dockerfile: 'checkout-folder/example-voting-app/result/Dockerfile'
+              Dockerfile: 'external-repo/example-voting-app/result/Dockerfile'
               tags: |
                 $(IMAGE_TAG)
 
-          # ✅ Build and push 'worker' image
           - task: Docker@2
             displayName: Build and Push 'worker' image
             inputs:
               containerRegistry: 'dockeracr'
               repository: 'worker'
               command: 'buildAndPush'
-              Dockerfile: 'checkout-folder/example-voting-app/worker/Dockerfile'
+              Dockerfile: 'external-repo/example-voting-app/worker/Dockerfile'
               tags: |
                 $(IMAGE_TAG)
