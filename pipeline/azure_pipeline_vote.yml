@@ -23,39 +23,35 @@ stages:
         pool:
           name: Default
         steps:
-          # ✅ Checkout into a uniquely named folder to avoid path collisions
           - checkout: votingapp
-            path: votingapp_src
+            path: project  # ✅ no collision with internal folder name
 
-          # ✅ Build and push 'vote'
           - task: Docker@2
             displayName: Build and Push 'vote' image
             inputs:
               containerRegistry: 'dockeracr'
               repository: 'vote'
               command: 'buildAndPush'
-              Dockerfile: 'votingapp_src/vote/Dockerfile'
+              Dockerfile: 'project/vote/Dockerfile'
               tags: |
                 $(IMAGE_TAG)
 
-          # ✅ Build and push 'result'
           - task: Docker@2
             displayName: Build and Push 'result' image
             inputs:
               containerRegistry: 'dockeracr'
               repository: 'result'
               command: 'buildAndPush'
-              Dockerfile: 'votingapp_src/result/Dockerfile'
+              Dockerfile: 'project/result/Dockerfile'
               tags: |
                 $(IMAGE_TAG)
 
-          # ✅ Build and push 'worker'
           - task: Docker@2
             displayName: Build and Push 'worker' image
             inputs:
               containerRegistry: 'dockeracr'
               repository: 'worker'
               command: 'buildAndPush'
-              Dockerfile: 'votingapp_src/worker/Dockerfile'
+              Dockerfile: 'project/worker/Dockerfile'
               tags: |
                 $(IMAGE_TAG)
