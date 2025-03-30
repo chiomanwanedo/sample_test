@@ -9,7 +9,7 @@ resources:
       type: github
       name: chiomanwanedo/example-voting-app
       ref: main
-      endpoint: github.com_chiomanwanedo  # GitHub service connection name
+      endpoint: github.com_chiomanwanedo
 
 variables:
   IMAGE_TAG: $(Build.BuildId)
@@ -21,10 +21,10 @@ stages:
       - job: PushImages
         displayName: Build & Push vote, result, and worker
         pool:
-          name: Default  # Self-hosted agent pool name
+          name: Default  # Use your self-hosted agent pool name if different
         steps:
           - checkout: apprepo
-            path: fetched-app
+            path: example-voting-app
 
           - task: Docker@2
             displayName: Build and Push 'vote' image
@@ -32,8 +32,8 @@ stages:
               containerRegistry: 'dockeracr'
               repository: 'vote'
               command: 'buildAndPush'
-              Dockerfile: 'fetched-app/vote/Dockerfile'
-              buildContext: 'fetched-app/vote'
+              Dockerfile: 'example-voting-app/vote/Dockerfile'
+              buildContext: 'example-voting-app/vote'
               tags: |
                 $(IMAGE_TAG)
 
@@ -43,8 +43,8 @@ stages:
               containerRegistry: 'dockeracr'
               repository: 'result'
               command: 'buildAndPush'
-              Dockerfile: 'fetched-app/result/Dockerfile'
-              buildContext: 'fetched-app/result'
+              Dockerfile: 'example-voting-app/result/Dockerfile'
+              buildContext: 'example-voting-app/result'
               tags: |
                 $(IMAGE_TAG)
 
@@ -54,7 +54,7 @@ stages:
               containerRegistry: 'dockeracr'
               repository: 'worker'
               command: 'buildAndPush'
-              Dockerfile: 'fetched-app/worker/Dockerfile'
-              buildContext: 'fetched-app/worker'
+              Dockerfile: 'example-voting-app/worker/Dockerfile'
+              buildContext: 'example-voting-app/worker'
               tags: |
                 $(IMAGE_TAG)
