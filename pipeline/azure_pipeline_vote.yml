@@ -9,7 +9,7 @@ resources:
       type: github
       name: chiomanwanedo/example-voting-app
       ref: main
-      endpoint: github.com_chiomanwanedo  # ✅ Your GitHub service connection name
+      endpoint: github.com_chiomanwanedo  # ✅ Replace with your GitHub service connection name if needed
 
 variables:
   IMAGE_TAG: $(Build.BuildId)
@@ -21,11 +21,11 @@ stages:
       - job: PushImages
         displayName: Build & Push vote, result, and worker
         pool:
-          name: Default  # ✅ Replace with your self-hosted agent pool name
+          name: Default  # ✅ Replace if your self-hosted agent pool has a different name
         steps:
-          # ✅ Checkout GitHub repo into 'example-voting-app' folder
+          # ✅ Checkout the GitHub repo into the 'src' folder to avoid nested path issues
           - checkout: votingapp
-            path: example-voting-app
+            path: src
 
           # ✅ Build and push 'vote' image
           - task: Docker@2
@@ -34,7 +34,7 @@ stages:
               containerRegistry: 'dockeracr'  # ✅ Replace with your ACR service connection name
               repository: 'vote'
               command: 'buildAndPush'
-              Dockerfile: 'example-voting-app/vote/Dockerfile'
+              Dockerfile: 'src/vote/Dockerfile'
               tags: |
                 $(IMAGE_TAG)
 
@@ -45,7 +45,7 @@ stages:
               containerRegistry: 'dockeracr'
               repository: 'result'
               command: 'buildAndPush'
-              Dockerfile: 'example-voting-app/result/Dockerfile'
+              Dockerfile: 'src/result/Dockerfile'
               tags: |
                 $(IMAGE_TAG)
 
@@ -56,6 +56,6 @@ stages:
               containerRegistry: 'dockeracr'
               repository: 'worker'
               command: 'buildAndPush'
-              Dockerfile: 'example-voting-app/worker/Dockerfile'
+              Dockerfile: 'src/worker/Dockerfile'
               tags: |
                 $(IMAGE_TAG)
