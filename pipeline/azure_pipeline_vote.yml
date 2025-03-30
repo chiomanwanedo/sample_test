@@ -1,32 +1,61 @@
-- checkout: votingapp
-  path: example-voting-app
+trigger:
+  branches:
+    include:
+      - main
 
-- task: Docker@2
-  displayName: Build and Push 'vote' image
-  inputs:
-    containerRegistry: 'dockeracr'
-    repository: 'vote'
-    command: 'buildAndPush'
-    Dockerfile: 'example-voting-app/vote/Dockerfile'
-    tags: |
-      $(IMAGE_TAG)
+resources:
+  repositories:
+    - repository: votingapp
+      type: github
+      name: chiomanwanedo/example-voting-app
+      ref: main
+      endpoint: github.com_chiomanwanedo  # ✅ Your GitHub service connection name
 
-- task: Docker@2
-  displayName: Build and Push 'result' image
-  inputs:
-    containerRegistry: 'dockeracr'
-    repository: 'result'
-    command: 'buildAndPush'
-    Dockerfile: 'example-voting-app/result/Dockerfile'
-    tags: |
-      $(IMAGE_TAG)
+variables:
+  IMAGE_TAG: $(Build.BuildId)
 
-- task: Docker@2
-  displayName: Build and Push 'worker' image
-  inputs:
-    containerRegistry: 'dockeracr'
-    repository: 'worker'
-    command: 'buildAndPush'
-    Dockerfile: 'example-voting-app/worker/Dockerfile'
-    tags: |
-      $(IMAGE_TAG)
+stages:
+  - stage: BuildAndPush
+    displayName: Build and Push Docker Images to ACR
+    jobs:
+      - job: PushImages
+        displayName: Build & Push vote, result, and worker
+        pool:
+          name: Default  # ✅ Replace with your self-hosted agent pool name
+        steps:
+          # ✅ Checkout GitHub repo into 'example-voting-app' folder
+          - checkout: votingapp
+            path: example-voting-app
+
+          # ✅ Build and push 'vote' image
+          - task: Docker@2
+            displayName: Build and Push 'vote' image
+            inputs:
+              containerRegistry: 'dockeracr'  # ✅ Replace with your ACR service connection name
+              repository: 'vote'
+              command: 'buildAndPush'
+              Dockerfile: 'example-voting-app/vote/Dockerfile'
+              tags: |
+                $(IMAGE_TAG)
+
+          # ✅ Build and push 'result' image
+          - task: Docker@2
+            displayName: Build and Push 'result' image
+            inputs:
+              containerRegistry: 'dockeracr'
+              repository: 'result'
+              command: 'buildAndPush'
+              Dockerfile: 'example-voting-app/result/Dockerfile'
+              tags: |
+                $(IMAGE_TAG)
+
+          # ✅ Build and push 'worker' image
+          - task: Docker@2
+            displayName: Build and Push 'worker' image
+            inputs:
+              containerRegistry: 'dockeracr'
+              repository: 'worker'
+              command: 'buildAndPush'
+              Dockerfile: 'example-voting-app/worker/Dockerfile'
+              tags: |
+                $(IMAGE_TAG)
