@@ -24,7 +24,7 @@ stages:
           name: Default
         steps:
           - checkout: votingapp
-            path: voting-src  # ✅ Unique, clean path
+            path: checkout-folder  # ✅ final, clean name
 
           - task: Docker@2
             displayName: Build and Push 'vote' image
@@ -32,7 +32,7 @@ stages:
               containerRegistry: 'dockeracr'
               repository: 'vote'
               command: 'buildAndPush'
-              Dockerfile: 'voting-src/vote/Dockerfile'
+              Dockerfile: 'checkout-folder/vote/Dockerfile'
               tags: |
                 $(IMAGE_TAG)
 
@@ -42,7 +42,7 @@ stages:
               containerRegistry: 'dockeracr'
               repository: 'result'
               command: 'buildAndPush'
-              Dockerfile: 'voting-src/result/Dockerfile'
+              Dockerfile: 'checkout-folder/result/Dockerfile'
               tags: |
                 $(IMAGE_TAG)
 
@@ -52,6 +52,6 @@ stages:
               containerRegistry: 'dockeracr'
               repository: 'worker'
               command: 'buildAndPush'
-              Dockerfile: 'voting-src/worker/Dockerfile'
+              Dockerfile: 'checkout-folder/worker/Dockerfile'
               tags: |
                 $(IMAGE_TAG)
