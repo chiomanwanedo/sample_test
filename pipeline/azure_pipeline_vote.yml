@@ -1,61 +1,32 @@
-trigger:
-  branches:
-    include:
-      - main
+- checkout: votingapp
+  path: example-voting-app
 
-resources:
-  repositories:
-    - repository: votingapp
-      type: github
-      name: chiomanwanedo/example-voting-app
-      ref: main
-      endpoint: github.com_chiomanwanedo  # ✅ Your GitHub service connection name
+- task: Docker@2
+  displayName: Build and Push 'vote' image
+  inputs:
+    containerRegistry: 'dockeracr'
+    repository: 'vote'
+    command: 'buildAndPush'
+    Dockerfile: 'example-voting-app/vote/Dockerfile'
+    tags: |
+      $(IMAGE_TAG)
 
-variables:
-  IMAGE_TAG: $(Build.BuildId)
+- task: Docker@2
+  displayName: Build and Push 'result' image
+  inputs:
+    containerRegistry: 'dockeracr'
+    repository: 'result'
+    command: 'buildAndPush'
+    Dockerfile: 'example-voting-app/result/Dockerfile'
+    tags: |
+      $(IMAGE_TAG)
 
-stages:
-  - stage: BuildAndPush
-    displayName: Build and Push Docker Images to ACR
-    jobs:
-      - job: PushImages
-        displayName: Build & Push vote, result, and worker
-        pool:
-          name: Default  # ✅ Replace with your self-hosted agent pool name if different
-        steps:
-          # ✅ Checkout GitHub repo into 'app' folder to avoid nested votingapp/votingapp issue
-          - checkout: votingapp
-            path: app
-
-          # ✅ Build and push 'vote' image
-          - task: Docker@2
-            displayName: Build and Push 'vote' image
-            inputs:
-              containerRegistry: 'dockeracr'  # ✅ Replace with your ACR service connection name
-              repository: 'vote'
-              command: 'buildAndPush'
-              Dockerfile: 'app/votingapp/vote/Dockerfile'
-              tags: |
-                $(IMAGE_TAG)
-
-          # ✅ Build and push 'result' image
-          - task: Docker@2
-            displayName: Build and Push 'result' image
-            inputs:
-              containerRegistry: 'dockeracr'
-              repository: 'result'
-              command: 'buildAndPush'
-              Dockerfile: 'app/votingapp/result/Dockerfile'
-              tags: |
-                $(IMAGE_TAG)
-
-          # ✅ Build and push 'worker' image
-          - task: Docker@2
-            displayName: Build and Push 'worker' image
-            inputs:
-              containerRegistry: 'dockeracr'
-              repository: 'worker'
-              command: 'buildAndPush'
-              Dockerfile: 'app/votingapp/worker/Dockerfile'
-              tags: |
-                $(IMAGE_TAG)
+- task: Docker@2
+  displayName: Build and Push 'worker' image
+  inputs:
+    containerRegistry: 'dockeracr'
+    repository: 'worker'
+    command: 'buildAndPush'
+    Dockerfile: 'example-voting-app/worker/Dockerfile'
+    tags: |
+      $(IMAGE_TAG)
