@@ -4,10 +4,10 @@ trigger:
       - main
 
 pool:
-  vmImage: 'Default'
+  name: Default  # your self-hosted agent pool
 
 variables:
-  IMAGE_TAG: '944' # You can parameterize this or make it dynamic if needed
+  IMAGE_TAG: $(Build.BuildId)
   REPO_PATH: 'k8s-specifications'
   VOTE_FILE: 'vote-deployment.yaml'
   RESULT_FILE: 'result-deployment.yaml'
@@ -15,20 +15,23 @@ variables:
 
 stages:
   - stage: UpdateK8sManifests
+    displayName: Update Kubernetes Image Tags
     jobs:
       - job: CommitManifests
+        displayName: Update and Push Kubernetes YAML
         steps:
           - checkout: self
 
           - script: |
-              echo "Updating image tags to :$IMAGE_TAG"
+              echo "🔧 Updating image tags to :$IMAGE_TAG in YAML files..."
 
               sed -i "s#chiomaacr.azurecr.io/vote:.*#chiomaacr.azurecr.io/vote:$IMAGE_TAG#g" $REPO_PATH/$VOTE_FILE
               sed -i "s#chiomaacr.azurecr.io/result:.*#chiomaacr.azurecr.io/result:$IMAGE_TAG#g" $REPO_PATH/$RESULT_FILE
               sed -i "s#chiomaacr.azurecr.io/worker:.*#chiomaacr.azurecr.io/worker:$IMAGE_TAG#g" $REPO_PATH/$WORKER_FILE
 
-              echo "Updated manifest files:"
+              echo "✅ YAML files updated:"
               git diff
+            displayName: 'Update YAML with New Image Tags'
 
           - script: |
               git config user.email "chiomavanessa8@gmail.com"
@@ -36,4 +39,4 @@ stages:
               git add $REPO_PATH/*.yaml
               git commit -m "Update image tags to :$IMAGE_TAG [CI skip]" || echo "No changes to commit"
               git push origin main
-            displayName: 'Commit and push changes'
+            displayName: 'Commit and Push Changes to GitHub'
