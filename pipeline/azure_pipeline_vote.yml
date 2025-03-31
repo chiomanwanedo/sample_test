@@ -9,7 +9,7 @@ resources:
       type: github
       name: chiomanwanedo/example-voting-app
       ref: main
-      endpoint: github.com_chiomanwanedo
+      endpoint: github.com_chiomanwanedo  # Ensure this OAuth/GitHub service connection is valid
 
 variables:
   IMAGE_TAG: $(Build.BuildId)
@@ -21,16 +21,18 @@ stages:
       - job: PushImages
         displayName: Build & Push vote, result, and worker
         pool:
-          name: Default
+          name: Default  # Your self-hosted agent pool
+
         steps:
           - checkout: apprepo
-            path: example-voting-app
+            path: example-voting-app  # ✅ This is the folder all paths will be relative to
 
           - task: Docker@2
             displayName: Build and Push 'vote' image
             inputs:
               containerRegistry: 'dockeracr'
               repository: 'vote'
+              command: 'buildAndPush'
               Dockerfile: 'example-voting-app/vote/Dockerfile'
               buildContext: 'example-voting-app/vote'
               tags: |
@@ -41,6 +43,7 @@ stages:
             inputs:
               containerRegistry: 'dockeracr'
               repository: 'result'
+              command: 'buildAndPush'
               Dockerfile: 'example-voting-app/result/Dockerfile'
               buildContext: 'example-voting-app/result'
               tags: |
@@ -51,6 +54,7 @@ stages:
             inputs:
               containerRegistry: 'dockeracr'
               repository: 'worker'
+              command: 'buildAndPush'
               Dockerfile: 'example-voting-app/worker/Dockerfile'
               buildContext: 'example-voting-app/worker'
               tags: |
