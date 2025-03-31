@@ -21,15 +21,15 @@ stages:
       - job: PushImages
         displayName: Build & Push vote, result, and worker
         pool:
-          name: Default  # Replace with your agent pool if needed
+          name: Default
         steps:
           - checkout: apprepo
-            path: src  # ✅ Use a neutral folder name to avoid nesting issues
+            path: src
 
           - task: Docker@2
             displayName: Build and Push 'vote' image
             inputs:
-              containerRegistry: 'dockeracr'  # Replace with your ACR service connection
+              containerRegistry: 'dockeracr'
               repository: 'vote'
               command: 'buildAndPush'
               Dockerfile: 'src/vote/Dockerfile'
@@ -52,4 +52,9 @@ stages:
             displayName: Build and Push 'worker' image
             inputs:
               containerRegistry: 'dockeracr'
-              repository: 'worker
+              repository: 'worker'
+              command: 'buildAndPush'
+              Dockerfile: 'src/worker/Dockerfile'
+              buildContext: 'src/worker'
+              tags: |
+                $(IMAGE_TAG)
