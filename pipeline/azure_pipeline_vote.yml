@@ -21,18 +21,16 @@ stages:
       - job: PushImages
         displayName: Build & Push vote, result, and worker
         pool:
-          name: Default  # Replace with your self-hosted agent pool if needed
-
+          name: Default
         steps:
           - checkout: apprepo
-            path: example-voting-app  # Final folder after checkout
+            path: example-voting-app
 
           - task: Docker@2
             displayName: Build and Push 'vote' image
             inputs:
               containerRegistry: 'dockeracr'
               repository: 'vote'
-              command: 'buildAndPush'
               Dockerfile: 'example-voting-app/vote/Dockerfile'
               buildContext: 'example-voting-app/vote'
               tags: |
@@ -43,7 +41,6 @@ stages:
             inputs:
               containerRegistry: 'dockeracr'
               repository: 'result'
-              command: 'buildAndPush'
               Dockerfile: 'example-voting-app/result/Dockerfile'
               buildContext: 'example-voting-app/result'
               tags: |
@@ -54,7 +51,6 @@ stages:
             inputs:
               containerRegistry: 'dockeracr'
               repository: 'worker'
-              command: 'buildAndPush'
               Dockerfile: 'example-voting-app/worker/Dockerfile'
               buildContext: 'example-voting-app/worker'
               tags: |
