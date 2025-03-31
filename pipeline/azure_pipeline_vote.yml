@@ -9,7 +9,7 @@ resources:
       type: github
       name: chiomanwanedo/example-voting-app
       ref: main
-      endpoint: github.com_chiomanwanedo  # Ensure this OAuth/GitHub service connection is valid
+      endpoint: github.com_chiomanwanedo
 
 variables:
   IMAGE_TAG: $(Build.BuildId)
@@ -21,20 +21,19 @@ stages:
       - job: PushImages
         displayName: Build & Push vote, result, and worker
         pool:
-          name: Default  # Your self-hosted agent pool
-
+          name: Default  # Use your agent pool name here
         steps:
           - checkout: apprepo
-            path: example-voting-app  # ✅ This is the folder all paths will be relative to
+            path: .  # ✅ Checkout to root to prevent double folder nesting
 
           - task: Docker@2
             displayName: Build and Push 'vote' image
             inputs:
-              containerRegistry: 'dockeracr'
+              containerRegistry: 'dockeracr'  # Replace with your ACR service connection name
               repository: 'vote'
               command: 'buildAndPush'
-              Dockerfile: 'example-voting-app/vote/Dockerfile'
-              buildContext: 'example-voting-app/vote'
+              Dockerfile: 'vote/Dockerfile'
+              buildContext: 'vote'
               tags: |
                 $(IMAGE_TAG)
 
@@ -44,8 +43,8 @@ stages:
               containerRegistry: 'dockeracr'
               repository: 'result'
               command: 'buildAndPush'
-              Dockerfile: 'example-voting-app/result/Dockerfile'
-              buildContext: 'example-voting-app/result'
+              Dockerfile: 'result/Dockerfile'
+              buildContext: 'result'
               tags: |
                 $(IMAGE_TAG)
 
@@ -55,7 +54,7 @@ stages:
               containerRegistry: 'dockeracr'
               repository: 'worker'
               command: 'buildAndPush'
-              Dockerfile: 'example-voting-app/worker/Dockerfile'
-              buildContext: 'example-voting-app/worker'
+              Dockerfile: 'worker/Dockerfile'
+              buildContext: 'worker'
               tags: |
                 $(IMAGE_TAG)
