@@ -5,11 +5,11 @@ trigger:
 
 resources:
   repositories:
-    - repository: apprepo
+    - repository: apprepo  # local alias
       type: github
       name: chiomanwanedo/example-voting-app
       ref: main
-      endpoint: github.com_chiomanwanedo  # Replace with your service connection
+      endpoint: github.com_chiomanwanedo  # your GitHub service connection
 
 variables:
   IMAGE_TAG: $(Build.BuildId)
@@ -21,40 +21,10 @@ stages:
       - job: PushImages
         displayName: Build & Push vote, result, and worker
         pool:
-          name: Default  # Your self-hosted agent pool
+          name: Default  # or your custom self-hosted agent pool name
         steps:
           - checkout: apprepo
-            path: fetched-app  # Folder where the GitHub repo will be cloned
+            path: example-voting-app  # ✅ avoid same name as repo to prevent nesting
 
           - task: Docker@2
-            displayName: Build and Push 'vote' image
-            inputs:
-              containerRegistry: 'dockeracr'
-              repository: 'vote'
-              command: 'buildAndPush'
-              Dockerfile: 'fetched-app/vote/Dockerfile'
-              buildContext: 'fetched-app/vote'
-              tags: |
-                $(IMAGE_TAG)
-
-          - task: Docker@2
-            displayName: Build and Push 'result' image
-            inputs:
-              containerRegistry: 'dockeracr'
-              repository: 'result'
-              command: 'buildAndPush'
-              Dockerfile: 'fetched-app/result/Dockerfile'
-              buildContext: 'fetched-app/result'
-              tags: |
-                $(IMAGE_TAG)
-
-          - task: Docker@2
-            displayName: Build and Push 'worker' image
-            inputs:
-              containerRegistry: 'dockeracr'
-              repository: 'worker'
-              command: 'buildAndPush'
-              Dockerfile: 'fetched-app/worker/Dockerfile'
-              buildContext: 'fetched-app/worker'
-              tags: |
-                $(IMAGE_TAG)
+            displayName: Build and
