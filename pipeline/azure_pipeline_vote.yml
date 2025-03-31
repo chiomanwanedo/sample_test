@@ -21,19 +21,19 @@ stages:
       - job: PushImages
         displayName: Build & Push vote, result, and worker
         pool:
-          name: Default  # Use your self-hosted agent pool name here
+          name: Default  # Replace with your self-hosted agent pool name if needed
         steps:
           - checkout: apprepo
-            path: example-voting-app  # ✅ Use subfolder to prevent double nesting
+            path: .  # ✅ Checkout directly into the working directory (no nested folder)
 
           - task: Docker@2
             displayName: Build and Push 'vote' image
             inputs:
-              containerRegistry: 'dockeracr'
+              containerRegistry: 'dockeracr'  # ✅ Replace with your ACR service connection
               repository: 'vote'
               command: 'buildAndPush'
-              Dockerfile: 'example-voting-app/vote/Dockerfile'
-              buildContext: 'example-voting-app/vote'
+              Dockerfile: 'vote/Dockerfile'
+              buildContext: 'vote'
               tags: |
                 $(IMAGE_TAG)
 
@@ -43,8 +43,8 @@ stages:
               containerRegistry: 'dockeracr'
               repository: 'result'
               command: 'buildAndPush'
-              Dockerfile: 'example-voting-app/result/Dockerfile'
-              buildContext: 'example-voting-app/result'
+              Dockerfile: 'result/Dockerfile'
+              buildContext: 'result'
               tags: |
                 $(IMAGE_TAG)
 
@@ -54,7 +54,7 @@ stages:
               containerRegistry: 'dockeracr'
               repository: 'worker'
               command: 'buildAndPush'
-              Dockerfile: 'example-voting-app/worker/Dockerfile'
-              buildContext: 'example-voting-app/worker'
+              Dockerfile: 'worker/Dockerfile'
+              buildContext: 'worker'
               tags: |
                 $(IMAGE_TAG)
