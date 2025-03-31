@@ -23,17 +23,16 @@ stages:
         pool:
           name: Default  # Replace with your agent pool if needed
         steps:
-          - checkout: apprepo
-            path: src  # This will place the repo under $(Build.SourcesDirectory)/src
+          - checkout: apprepo  # ✅ Removed path to avoid double nesting
 
           - task: Docker@2
             displayName: Build and Push 'vote' image
             inputs:
-              containerRegistry: 'dockeracr'
+              containerRegistry: 'dockeracr'  # Replace with your ACR connection
               repository: 'vote'
               command: 'buildAndPush'
-              Dockerfile: 'src/vote/Dockerfile'
-              buildContext: 'src/vote'
+              Dockerfile: 'vote/Dockerfile'
+              buildContext: 'vote'
               tags: |
                 $(IMAGE_TAG)
 
@@ -43,8 +42,8 @@ stages:
               containerRegistry: 'dockeracr'
               repository: 'result'
               command: 'buildAndPush'
-              Dockerfile: 'src/result/Dockerfile'
-              buildContext: 'src/result'
+              Dockerfile: 'result/Dockerfile'
+              buildContext: 'result'
               tags: |
                 $(IMAGE_TAG)
 
@@ -54,7 +53,7 @@ stages:
               containerRegistry: 'dockeracr'
               repository: 'worker'
               command: 'buildAndPush'
-              Dockerfile: 'src/worker/Dockerfile'
-              buildContext: 'src/worker'
+              Dockerfile: 'worker/Dockerfile'
+              buildContext: 'worker'
               tags: |
                 $(IMAGE_TAG)
