@@ -24,4 +24,37 @@ stages:
           name: Default  # Replace with your actual agent pool name
         steps:
           - checkout: apprepo
-            path: app
+            path: app  # ✅ Use a subfolder to avoid invalid checkout path
+
+          - task: Docker@2
+            displayName: Build and Push 'vote' image
+            inputs:
+              containerRegistry: 'dockeracr'  # ✅ Your ACR service connection
+              repository: 'vote'
+              command: 'buildAndPush'
+              Dockerfile: 'app/vote/Dockerfile'
+              buildContext: 'app/vote'
+              tags: |
+                $(IMAGE_TAG)
+
+          - task: Docker@2
+            displayName: Build and Push 'result' image
+            inputs:
+              containerRegistry: 'dockeracr'
+              repository: 'result'
+              command: 'buildAndPush'
+              Dockerfile: 'app/result/Dockerfile'
+              buildContext: 'app/result'
+              tags: |
+                $(IMAGE_TAG)
+
+          - task: Docker@2
+            displayName: Build and Push 'worker' image
+            inputs:
+              containerRegistry: 'dockeracr'
+              repository: 'worker'
+              command: 'buildAndPush'
+              Dockerfile: 'app/worker/Dockerfile'
+              buildContext: 'app/worker'
+              tags: |
+                $(IMAGE_TAG)
