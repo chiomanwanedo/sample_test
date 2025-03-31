@@ -9,7 +9,7 @@ resources:
       type: github
       name: chiomanwanedo/example-voting-app
       ref: main
-      endpoint: github.com_chiomanwanedo  # GitHub service connection name
+      endpoint: github.com_chiomanwanedo
 
 variables:
   IMAGE_TAG: $(Build.BuildId)
@@ -21,10 +21,11 @@ stages:
       - job: PushImages
         displayName: Build & Push vote, result, and worker
         pool:
-          name: Default  # Replace with your agent pool name if needed
+          name: Default  # Replace with your self-hosted agent pool if needed
+
         steps:
           - checkout: apprepo
-            path: example-voting-app
+            path: example-voting-app  # Final folder after checkout
 
           - task: Docker@2
             displayName: Build and Push 'vote' image
