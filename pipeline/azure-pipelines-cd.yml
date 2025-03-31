@@ -1,0 +1,39 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'Default'
+
+variables:
+  IMAGE_TAG: '944' # You can parameterize this or make it dynamic if needed
+  REPO_PATH: 'k8s-specifications'
+  VOTE_FILE: 'vote-deployment.yaml'
+  RESULT_FILE: 'result-deployment.yaml'
+  WORKER_FILE: 'worker-deployment.yaml'
+
+stages:
+  - stage: UpdateK8sManifests
+    jobs:
+      - job: CommitManifests
+        steps:
+          - checkout: self
+
+          - script: |
+              echo "Updating image tags to :$IMAGE_TAG"
+
+              sed -i "s#chiomaacr.azurecr.io/vote:.*#chiomaacr.azurecr.io/vote:$IMAGE_TAG#g" $REPO_PATH/$VOTE_FILE
+              sed -i "s#chiomaacr.azurecr.io/result:.*#chiomaacr.azurecr.io/result:$IMAGE_TAG#g" $REPO_PATH/$RESULT_FILE
+              sed -i "s#chiomaacr.azurecr.io/worker:.*#chiomaacr.azurecr.io/worker:$IMAGE_TAG#g" $REPO_PATH/$WORKER_FILE
+
+              echo "Updated manifest files:"
+              git diff
+
+          - script: |
+              git config user.email "azure-devops@pipeline.local"
+              git config user.name "Azure DevOps CD Bot"
+              git add $REPO_PATH/*.yaml
+              git commit -m "Update image tags to :$IMAGE_TAG [CI skip]" || echo "No changes to commit"
+              git push origin main
+            displayName: 'Commit and push changes'
