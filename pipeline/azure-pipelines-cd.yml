@@ -31,8 +31,8 @@ stages:
               git diff
 
           - script: |
-              git config user.email "azure-devops@pipeline.local"
-              git config user.name "Azure DevOps CD Bot"
+              git config user.email "chiomavanessa8@gmail.com"
+              git config user.name "chiomanwanedo"
               git add $REPO_PATH/*.yaml
               git commit -m "Update image tags to :$IMAGE_TAG [CI skip]" || echo "No changes to commit"
               git push origin main
