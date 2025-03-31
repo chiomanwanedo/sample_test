@@ -5,11 +5,11 @@ trigger:
 
 resources:
   repositories:
-    - repository: apprepo  # local alias
+    - repository: apprepo
       type: github
       name: chiomanwanedo/example-voting-app
       ref: main
-      endpoint: github.com_chiomanwanedo  # your GitHub service connection
+      endpoint: github.com_chiomanwanedo  # GitHub service connection name
 
 variables:
   IMAGE_TAG: $(Build.BuildId)
@@ -21,10 +21,40 @@ stages:
       - job: PushImages
         displayName: Build & Push vote, result, and worker
         pool:
-          name: Default  # or your custom self-hosted agent pool name
+          name: Default  # Replace with your agent pool name if needed
         steps:
           - checkout: apprepo
-            path: example-voting-app  # ✅ avoid same name as repo to prevent nesting
+            path: example-voting-app
 
           - task: Docker@2
-            displayName: Build and
+            displayName: Build and Push 'vote' image
+            inputs:
+              containerRegistry: 'dockeracr'
+              repository: 'vote'
+              command: 'buildAndPush'
+              Dockerfile: 'example-voting-app/vote/Dockerfile'
+              buildContext: 'example-voting-app/vote'
+              tags: |
+                $(IMAGE_TAG)
+
+          - task: Docker@2
+            displayName: Build and Push 'result' image
+            inputs:
+              containerRegistry: 'dockeracr'
+              repository: 'result'
+              command: 'buildAndPush'
+              Dockerfile: 'example-voting-app/result/Dockerfile'
+              buildContext: 'example-voting-app/result'
+              tags: |
+                $(IMAGE_TAG)
+
+          - task: Docker@2
+            displayName: Build and Push 'worker' image
+            inputs:
+              containerRegistry: 'dockeracr'
+              repository: 'worker'
+              command: 'buildAndPush'
+              Dockerfile: 'example-voting-app/worker/Dockerfile'
+              buildContext: 'example-voting-app/worker'
+              tags: |
+                $(IMAGE_TAG)
