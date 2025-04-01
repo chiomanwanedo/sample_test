@@ -25,9 +25,12 @@ pool:
 
 stages:
 
+  # -------------------------------------- #
+  #  Stage 1: Build and Push Docker Images #
+  # -------------------------------------- #
   - stage: BuildAndPush
     displayName: "Build and Push Docker Images"
-    condition: succeeded()  # ✅ Always run if trigger fires
+    condition: succeeded()
     jobs:
       - job: BuildImages
         steps:
@@ -36,7 +39,7 @@ stages:
             path: example-voting-app
 
           - script: |
-              echo "Verifying vote Dockerfile exists:"
+              echo "✅ Checking vote Dockerfile:"
               ls -al example-voting-app/vote
             displayName: "Debug Dockerfile Path"
 
@@ -76,10 +79,13 @@ stages:
                 $(IMAGE_TAG)
                 latest
 
+  # -------------------------------------- #
+  #  Stage 2: Update Kubernetes Manifests  #
+  # -------------------------------------- #
   - stage: UpdateManifests
     displayName: "Update K8s Manifests & Push"
     dependsOn: BuildAndPush
-    condition: succeeded()  # ✅ Ensure this stage runs after build
+    condition: succeeded()
     jobs:
       - job: UpdateYaml
         steps:
@@ -88,12 +94,12 @@ stages:
             path: example-voting-app
 
           - script: |
-              echo "Updating image tags to :$(IMAGE_TAG)"
+              echo "🔧 Updating image tags to :$(IMAGE_TAG)"
               sed -i "s#chiomaacr.azurecr.io/vote:.*#chiomaacr.azurecr.io/vote:$(IMAGE_TAG)#g" example-voting-app/$REPO_PATH/$VOTE_FILE
               sed -i "s#chiomaacr.azurecr.io/result:.*#chiomaacr.azurecr.io/result:$(IMAGE_TAG)#g" example-voting-app/$REPO_PATH/$RESULT_FILE
               sed -i "s#chiomaacr.azurecr.io/worker:.*#chiomaacr.azurecr.io/worker:$(IMAGE_TAG)#g" example-voting-app/$REPO_PATH/$WORKER_FILE
 
-              echo "Showing manifest diff:"
+              echo "🔍 Showing manifest diff:"
               git -C example-voting-app diff $REPO_PATH/
             displayName: "Update Image Tags in YAML Files"
 
@@ -106,10 +112,13 @@ stages:
               git push origin main
             displayName: "Commit and Push Updated YAML Files"
 
+  # -------------------------------------- #
+  #  Stage 3: Deploy to Kubernetes Cluster #
+  # -------------------------------------- #
   - stage: DeployToK8s
     displayName: "Deploy Updated YAMLs to Kubernetes"
     dependsOn: UpdateManifests
-    condition: succeeded()  # ✅ Ensure this stage runs after manifests update
+    condition: succeeded()
     jobs:
       - job: DeployK8s
         steps:
@@ -125,7 +134,7 @@ stages:
 
           - script: |
               for f in $REPO_PATH/$VOTE_FILE $REPO_PATH/$RESULT_FILE $REPO_PATH/$WORKER_FILE; do
-                echo "Applying: example-voting-app/$f"
-                kubectl apply -f example-voting-app/$f || { echo "Retrying $f"; sleep 5; kubectl apply -f example-voting-app/$f; }
+                echo "🚀 Applying: example-voting-app/$f"
+                kubectl apply -f example-voting-app/$f || { echo "⚠️ Retry: $f"; sleep 5; kubectl apply -f example-voting-app/$f; }
               done
             displayName: "Apply Updated Manifests to Cluster"
