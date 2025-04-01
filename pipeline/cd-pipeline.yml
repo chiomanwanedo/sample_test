@@ -1,0 +1,31 @@
+parameters:
+- name: 'adservice'
+  type: string
+  displayName: 'adservice'
+- name: imageTag
+  type: string
+  displayName: 'Latest'
+
+trigger: none  # Manual trigger or CI trigger passing params
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  acrName: 'chiomaacr.azurecr.io'
+
+steps:
+- checkout: self
+
+- script: |
+    echo "Updating image for ${{ parameters.serviceName }} to tag ${{ parameters.imageTag }}..."
+    sed -i "s|image: $(acrName)/${{ parameters.serviceName }}:.*|image: $(acrName)/${{ parameters.serviceName }}:${{ parameters.imageTag }}|" k8s/${{ parameters.serviceName }}-deployment.yaml
+  displayName: 'Update Kubernetes Manifest'
+
+- script: |
+    git config user.name "chiomanwanedo"
+    git config user.email "chiomavanessa8@gmail.com"
+    git add k8s/${{ parameters.serviceName }}-deployment.yaml
+    git commit -m "Update ${{ parameters.serviceName }} image to ${{ parameters.imageTag }}"
+    git push origin main
+  displayName: 'Commit and Push Updated Manifest'
