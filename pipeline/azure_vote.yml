@@ -1,7 +1,16 @@
+resources:
+  repositories:
+    - repository: voting-app
+      type: git
+      name: YourProjectName/voting-app  # Format: ProjectName/RepoName
+
 trigger:
   branches:
     include:
       - main
+  paths:
+    exclude:
+      - k8s-specifications/*.yaml
 
 variables:
   IMAGE_TAG: $[variables['Build.BuildId']]
@@ -11,17 +20,17 @@ variables:
   WORKER_FILE: 'worker-deployment.yaml'
 
 pool:
-  name: Default
+  name: Default  # Self-hosted agent pool
 
 stages:
+
   - stage: BuildAndPush
     displayName: "Build and Push Docker Images"
     jobs:
       - job: BuildImages
         steps:
-          - checkout: self  # Checkout the myagent repo (where this pipeline lives)
-
-          - checkout: voting-app  # Checkout the app repo
+          - checkout: self
+          - checkout: voting-app
             path: voting-app
 
           - task: Docker@2
@@ -68,6 +77,7 @@ stages:
         steps:
           - checkout: self
           - checkout: voting-app
+            path: voting-app
 
           - script: |
               echo "Updating image tags to :$(IMAGE_TAG)"
@@ -95,6 +105,7 @@ stages:
         steps:
           - checkout: self
           - checkout: voting-app
+            path: voting-app
 
           - script: |
               mkdir -p ~/.kube
