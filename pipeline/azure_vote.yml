@@ -2,32 +2,27 @@ trigger:
   branches:
     include:
       - main
-  paths:
-    exclude:
-      - k8s-specifications/*.yaml  # Prevent retrigger from YAML auto-commit
 
 variables:
   IMAGE_TAG: $[variables['Build.BuildId']]
-  REPO_PATH: '../k8s-specifications'
+  REPO_PATH: 'voting-app/k8s-specifications'
   VOTE_FILE: 'vote-deployment.yaml'
   RESULT_FILE: 'result-deployment.yaml'
   WORKER_FILE: 'worker-deployment.yaml'
 
 pool:
-  name: Default  # Use your self-hosted agent pool
+  name: Default
 
 stages:
-
-  # ---------------------- #
-  #  Stage 1: Build & Push #
-  # ---------------------- #
   - stage: BuildAndPush
     displayName: "Build and Push Docker Images"
     jobs:
       - job: BuildImages
-        displayName: "Build Docker Images"
         steps:
-          - checkout: self
+          - checkout: self  # Checkout the myagent repo (where this pipeline lives)
+
+          - checkout: voting-app  # Checkout the app repo
+            path: voting-app
 
           - task: Docker@2
             displayName: "Build and Push 'vote'"
@@ -35,8 +30,8 @@ stages:
               containerRegistry: 'dockeracr'
               repository: 'vote'
               command: 'buildAndPush'
-              Dockerfile: '../vote/Dockerfile'
-              buildContext: '../vote'
+              Dockerfile: 'voting-app/vote/Dockerfile'
+              buildContext: 'voting-app/vote'
               tags: |
                 $(IMAGE_TAG)
                 latest
@@ -47,8 +42,8 @@ stages:
               containerRegistry: 'dockeracr'
               repository: 'result'
               command: 'buildAndPush'
-              Dockerfile: '../result/Dockerfile'
-              buildContext: '../result'
+              Dockerfile: 'voting-app/result/Dockerfile'
+              buildContext: 'voting-app/result'
               tags: |
                 $(IMAGE_TAG)
                 latest
@@ -59,23 +54,20 @@ stages:
               containerRegistry: 'dockeracr'
               repository: 'worker'
               command: 'buildAndPush'
-              Dockerfile: '../worker/Dockerfile'
-              buildContext: '../worker'
+              Dockerfile: 'voting-app/worker/Dockerfile'
+              buildContext: 'voting-app/worker'
               tags: |
                 $(IMAGE_TAG)
                 latest
 
-  # ---------------------------- #
-  #  Stage 2: Update Manifests   #
-  # ---------------------------- #
   - stage: UpdateManifests
     displayName: "Update K8s Manifests & Push"
     dependsOn: BuildAndPush
     jobs:
       - job: UpdateYaml
-        displayName: "Update Image Tags and Commit"
         steps:
           - checkout: self
+          - checkout: voting-app
 
           - script: |
               echo "Updating image tags to :$(IMAGE_TAG)"
@@ -84,28 +76,25 @@ stages:
               sed -i "s#chiomaacr.azurecr.io/worker:.*#chiomaacr.azurecr.io/worker:$(IMAGE_TAG)#g" $REPO_PATH/$WORKER_FILE
 
               echo "Showing manifest diff:"
-              git diff
+              git -C voting-app diff
             displayName: "Update Image Tags in YAML Files"
 
           - script: |
-              git config user.email "chiomavanessa8@gmail.com"
-              git config user.name "chiomanwanedo"
-              git add $REPO_PATH/*.yaml
-              git commit -m "Update image tags to :$(IMAGE_TAG) [skip ci]" || echo "No changes to commit"
-              git push origin main
+              git -C voting-app config user.email "chiomavanessa8@gmail.com"
+              git -C voting-app config user.name "chiomanwanedo"
+              git -C voting-app add k8s-specifications/*.yaml
+              git -C voting-app commit -m "Update image tags to :$(IMAGE_TAG) [skip ci]" || echo "No changes to commit"
+              git -C voting-app push origin main
             displayName: "Commit and Push Updated YAML Files"
 
-  # ---------------------------- #
-  #  Stage 3: Deploy to Cluster  #
-  # ---------------------------- #
   - stage: DeployToK8s
-    displayName: "Deploy Updated YAMLs to Kubernetes"
+    displayName: "Deploy to Kubernetes"
     dependsOn: UpdateManifests
     jobs:
       - job: DeployK8s
-        displayName: "Apply Kubernetes Manifests"
         steps:
           - checkout: self
+          - checkout: voting-app
 
           - script: |
               mkdir -p ~/.kube
@@ -118,4 +107,4 @@ stages:
                 echo "Applying $f"
                 kubectl apply -f $f || { echo "Retrying $f"; sleep 5; kubectl apply -f $f; }
               done
-            displayName: "Apply Updated Manifests to Cluster"
+            displayName: "Deploy to Cluster"
