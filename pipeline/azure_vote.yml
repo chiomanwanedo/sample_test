@@ -2,7 +2,7 @@ resources:
   repositories:
     - repository: voting-app
       type: git
-      name: microservices-cicd/example-voting-app  # ✅ Updated project/repo name
+      name: microservices-cicd/sample_test  # ✅ Updated project/repo name
 
 trigger:
   branches:
