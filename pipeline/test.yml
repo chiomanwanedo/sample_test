@@ -4,20 +4,21 @@ resources:
   repositories:
     - repository: voting-app
       type: github
-      name: chiomanwanedo/example-voting-app
-      endpoint: github.com_chiomanwanedo
+      name: chiomanwanedo/example-voting-app   # ✅ Must match your GitHub repo
+      endpoint: github.com_chiomanwanedo       # ✅ Your GitHub service connection
 
 pool:
-  name: Default
+  name: Default  # Your self-hosted agent pool
 
 jobs:
-  - job: CheckFiles
+  - job: VerifyGitHubRepoCheckout
+    displayName: "Test Checkout of GitHub Repo"
     steps:
       - checkout: self
       - checkout: voting-app
         path: example-voting-app
 
       - script: |
-          echo "Checking contents of example-voting-app:"
+          echo "✅ Verifying contents of GitHub repo:"
           ls -l example-voting-app
-        displayName: "List App Repo Contents"
+        displayName: "List GitHub App Repo Contents"
