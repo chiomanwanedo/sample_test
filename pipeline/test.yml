@@ -1,0 +1,23 @@
+trigger: none
+
+resources:
+  repositories:
+    - repository: voting-app
+      type: github
+      name: chiomanwanedo/example-voting-app
+      endpoint: github.com_chiomanwanedo
+
+pool:
+  name: Default
+
+jobs:
+  - job: CheckFiles
+    steps:
+      - checkout: self
+      - checkout: voting-app
+        path: example-voting-app
+
+      - script: |
+          echo "Checking contents of example-voting-app:"
+          ls -l example-voting-app
+        displayName: "List App Repo Contents"
