@@ -2,7 +2,7 @@ resources:
   repositories:
     - repository: voting-app
       type: git
-      name: YourProjectName/voting-app  # Format: ProjectName/RepoName
+      name: microservices-cicd/example-voting-app  # Format: ProjectName/RepoName
 
 trigger:
   branches:
