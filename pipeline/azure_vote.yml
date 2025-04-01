@@ -2,8 +2,8 @@ resources:
   repositories:
     - repository: voting-app
       type: github
-      name: chiomanwanedo/sample_test       # ✅ Your GitHub repo
-      endpoint: github.com_chiomanwanedo    # ✅ Your GitHub service connection
+      name: chiomanwanedo/example-vote-app
+      endpoint: github.com_chiomanwanedo
 
 trigger:
   branches:
@@ -11,7 +11,7 @@ trigger:
       - main
   paths:
     exclude:
-      - k8s-specifications/*.yaml           # Prevent loop on manifest updates
+      - k8s-specifications/*.yaml
 
 variables:
   IMAGE_TAG: $[variables['Build.BuildId']]
@@ -21,7 +21,7 @@ variables:
   WORKER_FILE: 'worker-deployment.yaml'
 
 pool:
-  name: Default  # Use your self-hosted agent pool
+  name: Default  # Self-hosted agent pool
 
 stages:
 
@@ -32,7 +32,7 @@ stages:
         steps:
           - checkout: self
           - checkout: voting-app
-            path: voting-app
+            path: example-vote-app  # GitHub app repo is checked out into this folder
 
           - task: Docker@2
             displayName: "Build and Push 'vote'"
@@ -40,8 +40,8 @@ stages:
               containerRegistry: 'dockeracr'
               repository: 'vote'
               command: 'buildAndPush'
-              Dockerfile: 'voting-app/vote/Dockerfile'
-              buildContext: 'voting-app/vote'
+              Dockerfile: 'example-vote-app/vote/Dockerfile'
+              buildContext: 'example-vote-app/vote'
               tags: |
                 $(IMAGE_TAG)
                 latest
@@ -52,8 +52,8 @@ stages:
               containerRegistry: 'dockeracr'
               repository: 'result'
               command: 'buildAndPush'
-              Dockerfile: 'voting-app/result/Dockerfile'
-              buildContext: 'voting-app/result'
+              Dockerfile: 'example-vote-app/result/Dockerfile'
+              buildContext: 'example-vote-app/result'
               tags: |
                 $(IMAGE_TAG)
                 latest
@@ -64,8 +64,8 @@ stages:
               containerRegistry: 'dockeracr'
               repository: 'worker'
               command: 'buildAndPush'
-              Dockerfile: 'voting-app/worker/Dockerfile'
-              buildContext: 'voting-app/worker'
+              Dockerfile: 'example-vote-app/worker/Dockerfile'
+              buildContext: 'example-vote-app/worker'
               tags: |
                 $(IMAGE_TAG)
                 latest
@@ -78,20 +78,20 @@ stages:
         steps:
           - checkout: self
           - checkout: voting-app
-            path: voting-app
+            path: example-vote-app
 
           - script: |
               echo "Updating image tags to :$(IMAGE_TAG)"
-              sed -i "s#chiomaacr.azurecr.io/vote:.*#chiomaacr.azurecr.io/vote:$(IMAGE_TAG)#g" voting-app/$REPO_PATH/$VOTE_FILE
-              sed -i "s#chiomaacr.azurecr.io/result:.*#chiomaacr.azurecr.io/result:$(IMAGE_TAG)#g" voting-app/$REPO_PATH/$RESULT_FILE
-              sed -i "s#chiomaacr.azurecr.io/worker:.*#chiomaacr.azurecr.io/worker:$(IMAGE_TAG)#g" voting-app/$REPO_PATH/$WORKER_FILE
+              sed -i "s#chiomaacr.azurecr.io/vote:.*#chiomaacr.azurecr.io/vote:$(IMAGE_TAG)#g" example-vote-app/$REPO_PATH/$VOTE_FILE
+              sed -i "s#chiomaacr.azurecr.io/result:.*#chiomaacr.azurecr.io/result:$(IMAGE_TAG)#g" example-vote-app/$REPO_PATH/$RESULT_FILE
+              sed -i "s#chiomaacr.azurecr.io/worker:.*#chiomaacr.azurecr.io/worker:$(IMAGE_TAG)#g" example-vote-app/$REPO_PATH/$WORKER_FILE
 
               echo "Showing manifest diff:"
-              git -C voting-app diff k8s-specifications/
+              git -C example-vote-app diff k8s-specifications/
             displayName: "Update Image Tags in YAML Files"
 
           - script: |
-              cd voting-app
+              cd example-vote-app
               git config user.email "chiomavanessa8@gmail.com"
               git config user.name "chiomanwanedo"
               git add k8s-specifications/*.yaml
@@ -107,7 +107,7 @@ stages:
         steps:
           - checkout: self
           - checkout: voting-app
-            path: voting-app
+            path: example-vote-app
 
           - script: |
               mkdir -p ~/.kube
@@ -117,7 +117,7 @@ stages:
 
           - script: |
               for f in $REPO_PATH/$VOTE_FILE $REPO_PATH/$RESULT_FILE $REPO_PATH/$WORKER_FILE; do
-                echo "Applying: voting-app/$f"
-                kubectl apply -f voting-app/$f || { echo "Retrying $f"; sleep 5; kubectl apply -f voting-app/$f; }
+                echo "Applying: example-vote-app/$f"
+                kubectl apply -f example-vote-app/$f || { echo "Retrying $f"; sleep 5; kubectl apply -f example-vote-app/$f; }
               done
             displayName: "Apply Updated Manifests to Cluster"
