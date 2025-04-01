@@ -2,6 +2,9 @@ trigger:
   branches:
     include:
       - main
+  paths:
+    exclude:
+      - k8s-specifications/*.yaml  # Prevent retrigger from YAML auto-commit
 
 variables:
   IMAGE_TAG: $[variables['Build.BuildId']]
@@ -76,43 +79,4 @@ stages:
 
           - script: |
               echo "Updating image tags to :$(IMAGE_TAG)"
-              sed -i "s#chiomaacr.azurecr.io/vote:.*#chiomaacr.azurecr.io/vote:$(IMAGE_TAG)#g" $REPO_PATH/$VOTE_FILE
-              sed -i "s#chiomaacr.azurecr.io/result:.*#chiomaacr.azurecr.io/result:$(IMAGE_TAG)#g" $REPO_PATH/$RESULT_FILE
-              sed -i "s#chiomaacr.azurecr.io/worker:.*#chiomaacr.azurecr.io/worker:$(IMAGE_TAG)#g" $REPO_PATH/$WORKER_FILE
-
-              echo "Showing manifest diff:"
-              git diff
-            displayName: "Update Image Tags in YAML Files"
-
-          - script: |
-              git config user.email "chiomavanessa8@gmail.com"
-              git config user.name "chiomanwanedo"
-              git add $REPO_PATH/*.yaml
-              git commit -m "Update image tags to :$(IMAGE_TAG) [skip ci]" || echo "No changes to commit"
-              git push origin main
-            displayName: "Commit and Push Updated YAML Files"
-
-  # ---------------------------- #
-  #  Stage 3: Deploy to Cluster  #
-  # ---------------------------- #
-  - stage: DeployToK8s
-    displayName: "Deploy Updated YAMLs to Kubernetes"
-    dependsOn: UpdateManifests
-    jobs:
-      - job: DeployK8s
-        displayName: "Apply Kubernetes Manifests"
-        steps:
-          - checkout: self
-
-          - script: |
-              mkdir -p ~/.kube
-              echo "$(KUBECONFIG_CONTENT)" > ~/.kube/config
-              chmod 600 ~/.kube/config
-            displayName: "Set Up Kubeconfig"
-
-          - script: |
-              for f in $REPO_PATH/$VOTE_FILE $REPO_PATH/$RESULT_FILE $REPO_PATH/$WORKER_FILE; do
-                echo "Applying $f"
-                kubectl apply -f $f || { echo "Retrying $f"; sleep 5; kubectl apply -f $f; }
-              done
-            displayName: "Apply Updated Manifests to Cluster"
+              sed -i "s#chiomaacr
