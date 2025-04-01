@@ -1,8 +1,9 @@
 resources:
   repositories:
     - repository: voting-app
-      type: git
-      name: microservices-cicd/sample_test  # ✅ Updated project/repo name
+      type: github
+      name: chiomanwanedo/sample_test       # ✅ Your GitHub repo
+      endpoint: github.com_chiomanwanedo    # ✅ Your GitHub service connection
 
 trigger:
   branches:
@@ -10,7 +11,7 @@ trigger:
       - main
   paths:
     exclude:
-      - k8s-specifications/*.yaml
+      - k8s-specifications/*.yaml           # Prevent loop on manifest updates
 
 variables:
   IMAGE_TAG: $[variables['Build.BuildId']]
@@ -20,7 +21,7 @@ variables:
   WORKER_FILE: 'worker-deployment.yaml'
 
 pool:
-  name: Default
+  name: Default  # Use your self-hosted agent pool
 
 stages:
 
