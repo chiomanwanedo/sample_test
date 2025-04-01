@@ -36,6 +36,7 @@ stages:
               buildContext: 'vote'
               tags: |
                 $(IMAGE_TAG)
+                latest
 
           - task: Docker@2
             displayName: "Build and Push 'result'"
@@ -47,6 +48,7 @@ stages:
               buildContext: 'result'
               tags: |
                 $(IMAGE_TAG)
+                latest
 
           - task: Docker@2
             displayName: "Build and Push 'worker'"
@@ -58,6 +60,7 @@ stages:
               buildContext: 'worker'
               tags: |
                 $(IMAGE_TAG)
+                latest
 
   # ---------------------------- #
   #  Stage 2: Update Manifests   #
@@ -108,7 +111,8 @@ stages:
             displayName: "Set Up Kubeconfig"
 
           - script: |
-              kubectl apply -f $REPO_PATH/$VOTE_FILE
-              kubectl apply -f $REPO_PATH/$RESULT_FILE
-              kubectl apply -f $REPO_PATH/$WORKER_FILE
-            displayName: 'Apply Updated Manifests to Cluster'
+              for f in $REPO_PATH/$VOTE_FILE $REPO_PATH/$RESULT_FILE $REPO_PATH/$WORKER_FILE; do
+                echo "Applying $f"
+                kubectl apply -f $f || { echo "Retrying $f"; sleep 5; kubectl apply -f $f; }
+              done
+            displayName: "Apply Updated Manifests to Cluster"
