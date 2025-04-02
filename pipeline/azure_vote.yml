@@ -3,7 +3,7 @@ resources:
     - repository: voting-app
       type: github
       name: chiomanwanedo/example-voting-app
-      endpoint: github  # Replace with your actual service connection if different
+      endpoint: github-app-access  # Replace with your actual GitHub service connection name
 
 trigger:
   branches:
@@ -95,16 +95,16 @@ stages:
 
           - script: |
               echo "🔧 Updating image tags to :$(IMAGE_TAG)"
-              sed -i "s#chiomaacr.azurecr.io/vote:.*#chiomaacr.azurecr.io/vote:$(IMAGE_TAG)#g" voting-app/$REPO_PATH/$VOTE_FILE
-              sed -i "s#chiomaacr.azurecr.io/result:.*#chiomaacr.azurecr.io/result:$(IMAGE_TAG)#g" voting-app/$REPO_PATH/$RESULT_FILE
-              sed -i "s#chiomaacr.azurecr.io/worker:.*#chiomaacr.azurecr.io/worker:$(IMAGE_TAG)#g" voting-app/$REPO_PATH/$WORKER_FILE
+              sed -i "s#chiomaacr.azurecr.io/vote:.*#chiomaacr.azurecr.io/vote:$(IMAGE_TAG)#g" $(Build.SourcesDirectory)/../voting-app/$REPO_PATH/$VOTE_FILE
+              sed -i "s#chiomaacr.azurecr.io/result:.*#chiomaacr.azurecr.io/result:$(IMAGE_TAG)#g" $(Build.SourcesDirectory)/../voting-app/$REPO_PATH/$RESULT_FILE
+              sed -i "s#chiomaacr.azurecr.io/worker:.*#chiomaacr.azurecr.io/worker:$(IMAGE_TAG)#g" $(Build.SourcesDirectory)/../voting-app/$REPO_PATH/$WORKER_FILE
 
               echo "🔍 Showing manifest diff:"
-              git -C voting-app diff $REPO_PATH/
+              git -C $(Build.SourcesDirectory)/../voting-app diff $REPO_PATH/
             displayName: "Update Image Tags in YAML Files"
 
           - script: |
-              cd voting-app
+              cd $(Build.SourcesDirectory)/../voting-app
               git config user.email "chiomavanessa8@gmail.com"
               git config user.name "chiomanwanedo"
               git add $REPO_PATH/*.yaml
@@ -134,7 +134,7 @@ stages:
 
           - script: |
               for f in $REPO_PATH/$VOTE_FILE $REPO_PATH/$RESULT_FILE $REPO_PATH/$WORKER_FILE; do
-                echo "🚀 Applying: voting-app/$f"
-                kubectl apply -f voting-app/$f || { echo "⚠️ Retry: $f"; sleep 5; kubectl apply -f voting-app/$f; }
+                echo "🚀 Applying: $(Build.SourcesDirectory)/../voting-app/$f"
+                kubectl apply -f $(Build.SourcesDirectory)/../voting-app/$f || { echo "⚠️ Retry: $f"; sleep 5; kubectl apply -f $(Build.SourcesDirectory)/../voting-app/$f; }
               done
             displayName: "Apply Updated Manifests to Cluster"
