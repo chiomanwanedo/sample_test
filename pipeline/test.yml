@@ -5,7 +5,7 @@ resources:
     - repository: voting-app
       type: github
       name: chiomanwanedo/example-voting-app   # ✅ Must match your GitHub repo
-      endpoint: github.com_chiomanwanedo       # ✅ Your GitHub service connection
+      endpoint: github       # ✅ Your GitHub service connection
 
 pool:
   name: Default  # Your self-hosted agent pool
