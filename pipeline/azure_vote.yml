@@ -120,8 +120,8 @@ stages:
               git push origin main
             displayName: "Commit and Push Updated YAML Files"
             env:
-              GITHUB_USERNAME: $(GITHUB_USERNAME)
-              GITHUB_TOKEN: $(GITHUB_TOKEN)
+              GITHUB_USERNAME: $GITHUB_USERNAME
+              GITHUB_TOKEN: $GITHUB_TOKEN
 
   # -------------------------------------- #
   #  Stage 3: Deploy to Kubernetes Cluster #
@@ -139,7 +139,7 @@ stages:
 
           - script: |
               mkdir -p ~/.kube
-              echo "$(KUBECONFIG_CONTENT)" > ~/.kube/config
+              echo "$KUBECONFIG_CONTENT" > ~/.kube/config
               chmod 600 ~/.kube/config
             displayName: "Set Up Kubeconfig"
 
