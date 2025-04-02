@@ -3,7 +3,8 @@ resources:
     - repository: voting-app
       type: github
       name: chiomanwanedo/example-voting-app
-      endpoint: github
+      endpoint: github  # 🔁 Replace with your working GitHub service connection name
+
 trigger:
   branches:
     include:
@@ -36,11 +37,6 @@ stages:
           - checkout: self
           - checkout: voting-app
             path: example-voting-app
-
-          - script: |
-              echo "✅ Checking vote Dockerfile:"
-              ls -al example-voting-app/vote
-            displayName: "Debug Dockerfile Path"
 
           - task: Docker@2
             displayName: "Build and Push 'vote'"
