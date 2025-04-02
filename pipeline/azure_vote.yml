@@ -3,7 +3,7 @@ resources:
     - repository: voting-app
       type: github
       name: chiomanwanedo/example-voting-app
-      endpoint: github  # 🔁 Replace if your actual service connection has a different name
+      endpoint: github  # 🔁 Replace if your service connection name is different
 
 trigger:
   branches:
@@ -38,14 +38,19 @@ stages:
           - checkout: voting-app
             path: example-voting-app
 
+          - script: |
+              echo "🧪 Verifying Dockerfile paths:"
+              find $(Agent.BuildDirectory)/s/example-voting-app -name Dockerfile
+            displayName: "Debug Dockerfile Paths"
+
           - task: Docker@2
             displayName: "Build and Push 'vote'"
             inputs:
               containerRegistry: 'dockeracr'
               repository: 'vote'
               command: 'buildAndPush'
-              Dockerfile: '$(Build.SourcesDirectory)/example-voting-app/vote/Dockerfile'
-              buildContext: '$(Build.SourcesDirectory)/example-voting-app/vote'
+              Dockerfile: '$(Agent.BuildDirectory)/s/example-voting-app/vote/Dockerfile'
+              buildContext: '$(Agent.BuildDirectory)/s/example-voting-app/vote'
               tags: |
                 $(IMAGE_TAG)
                 latest
@@ -56,8 +61,8 @@ stages:
               containerRegistry: 'dockeracr'
               repository: 'result'
               command: 'buildAndPush'
-              Dockerfile: '$(Build.SourcesDirectory)/example-voting-app/result/Dockerfile'
-              buildContext: '$(Build.SourcesDirectory)/example-voting-app/result'
+              Dockerfile: '$(Agent.BuildDirectory)/s/example-voting-app/result/Dockerfile'
+              buildContext: '$(Agent.BuildDirectory)/s/example-voting-app/result'
               tags: |
                 $(IMAGE_TAG)
                 latest
@@ -68,8 +73,8 @@ stages:
               containerRegistry: 'dockeracr'
               repository: 'worker'
               command: 'buildAndPush'
-              Dockerfile: '$(Build.SourcesDirectory)/example-voting-app/worker/Dockerfile'
-              buildContext: '$(Build.SourcesDirectory)/example-voting-app/worker'
+              Dockerfile: '$(Agent.BuildDirectory)/s/example-voting-app/worker/Dockerfile'
+              buildContext: '$(Agent.BuildDirectory)/s/example-voting-app/worker'
               tags: |
                 $(IMAGE_TAG)
                 latest
