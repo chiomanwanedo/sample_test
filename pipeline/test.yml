@@ -5,7 +5,7 @@ resources:
     - repository: voting-app
       type: github
       name: chiomanwanedo/example-voting-app   # ✅ Must match your GitHub repo
-      endpoint: github       # ✅ Your GitHub service connection
+      endpoint: github                         # ✅ Your GitHub service connection
 
 pool:
   name: Default  # Your self-hosted agent pool
@@ -19,6 +19,9 @@ jobs:
         path: example-voting-app
 
       - script: |
-          echo "✅ Verifying contents of GitHub repo:"
-          ls -l example-voting-app
-        displayName: "List GitHub App Repo Contents"
+          echo "🌍 Current working directory: $(pwd)"
+          echo "📁 Workspace contents:"
+          ls -al
+          echo "📂 Recursive tree of everything:"
+          find . -type f | sort
+        displayName: "🧪 Show full workspace contents"
