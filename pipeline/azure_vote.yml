@@ -3,7 +3,7 @@ resources:
     - repository: voting-app
       type: github
       name: chiomanwanedo/example-voting-app
-      endpoint: github-app-access  # Replace if needed
+      endpoint: github  # Replace if needed
 
 trigger:
   branches:
