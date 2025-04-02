@@ -3,7 +3,7 @@ resources:
     - repository: voting-app
       type: github
       name: chiomanwanedo/example-voting-app
-      endpoint: github  # Replace with your actual GitHub service connection name
+      endpoint: github  # Replace with your actual GitHub service connection
 
 trigger:
   branches:
@@ -107,6 +107,10 @@ stages:
               cd $(Build.SourcesDirectory)/../voting-app
               git config user.email "chiomavanessa8@gmail.com"
               git config user.name "chiomanwanedo"
+
+              # ✅ Fix for detached HEAD
+              git checkout main
+
               git add $REPO_PATH/*.yaml
               git commit -m "Update image tags to :$(IMAGE_TAG) [skip ci]" || echo "No changes to commit"
               git push origin main
