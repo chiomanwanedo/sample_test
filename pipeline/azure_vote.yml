@@ -3,7 +3,7 @@ resources:
     - repository: voting-app
       type: github
       name: chiomanwanedo/example-voting-app
-      endpoint: github  # Replace if using a different GitHub service connection
+      endpoint: github-app-access  # Replace if needed
 
 trigger:
   branches:
@@ -110,13 +110,18 @@ stages:
 
               git checkout main
 
-              # ✅ Use proper $ENV_VAR syntax for credentials
+              echo "🔐 GITHUB_USERNAME: $GITHUB_USERNAME"
+              echo "🔐 GITHUB_TOKEN length: ${#GITHUB_TOKEN}"
+
               git remote set-url origin https://$GITHUB_USERNAME:$GITHUB_TOKEN@github.com/chiomanwanedo/example-voting-app.git
 
               git add $REPO_PATH/*.yaml
               git commit -m "Update image tags to :$(IMAGE_TAG) [skip ci]" || echo "No changes to commit"
               git push origin main
             displayName: "Commit and Push Updated YAML Files"
+            env:
+              GITHUB_USERNAME: $(GITHUB_USERNAME)
+              GITHUB_TOKEN: $(GITHUB_TOKEN)
 
   # -------------------------------------- #
   #  Stage 3: Deploy to Kubernetes Cluster #
