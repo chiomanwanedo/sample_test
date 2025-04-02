@@ -3,7 +3,7 @@ resources:
     - repository: voting-app
       type: github
       name: chiomanwanedo/example-voting-app
-      endpoint: github-app-access  # Replace with your actual GitHub service connection name
+      endpoint: github  # Replace with your actual GitHub service connection name
 
 trigger:
   branches:
