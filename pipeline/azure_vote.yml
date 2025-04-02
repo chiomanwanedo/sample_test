@@ -3,7 +3,7 @@ resources:
     - repository: voting-app
       type: github
       name: chiomanwanedo/example-voting-app
-      endpoint: github  # 🔁 Replace with your working GitHub service connection name
+      endpoint: github  # 🔁 Replace if your actual service connection has a different name
 
 trigger:
   branches:
@@ -44,8 +44,8 @@ stages:
               containerRegistry: 'dockeracr'
               repository: 'vote'
               command: 'buildAndPush'
-              Dockerfile: 'example-voting-app/vote/Dockerfile'
-              buildContext: 'example-voting-app/vote'
+              Dockerfile: '$(Build.SourcesDirectory)/example-voting-app/vote/Dockerfile'
+              buildContext: '$(Build.SourcesDirectory)/example-voting-app/vote'
               tags: |
                 $(IMAGE_TAG)
                 latest
@@ -56,8 +56,8 @@ stages:
               containerRegistry: 'dockeracr'
               repository: 'result'
               command: 'buildAndPush'
-              Dockerfile: 'example-voting-app/result/Dockerfile'
-              buildContext: 'example-voting-app/result'
+              Dockerfile: '$(Build.SourcesDirectory)/example-voting-app/result/Dockerfile'
+              buildContext: '$(Build.SourcesDirectory)/example-voting-app/result'
               tags: |
                 $(IMAGE_TAG)
                 latest
@@ -68,8 +68,8 @@ stages:
               containerRegistry: 'dockeracr'
               repository: 'worker'
               command: 'buildAndPush'
-              Dockerfile: 'example-voting-app/worker/Dockerfile'
-              buildContext: 'example-voting-app/worker'
+              Dockerfile: '$(Build.SourcesDirectory)/example-voting-app/worker/Dockerfile'
+              buildContext: '$(Build.SourcesDirectory)/example-voting-app/worker'
               tags: |
                 $(IMAGE_TAG)
                 latest
