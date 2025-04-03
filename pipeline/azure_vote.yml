@@ -1,151 +1,69 @@
+name: vote-pipeline-$(Date:yyyyMMdd)$(Rev:.r)
+
+trigger: none  # This YAML file lives in a separate repo, so we use the repo resource trigger below
+
 resources:
   repositories:
-    - repository: voting-app
-      type: github
-      name: chiomanwanedo/example-voting-app
-      endpoint: github  # Replace if needed
-
-trigger:
-  branches:
-    include:
-      - main
-  paths:
-    exclude:
-      - k8s-specifications/*.yaml
+  - repository: app_code
+    type: github
+    name: chiomanwanedo/example-vote-app
+    ref: main
+    endpoint: github  # 👈 your GitHub service connection name
+    trigger:
+      branches:
+        include:
+          - main
+      paths:
+        include:
+          - vote/**
 
 variables:
-  IMAGE_TAG: $[variables['Build.BuildId']]
-  REPO_PATH: 'k8s-specifications'
-  VOTE_FILE: 'vote-deployment.yaml'
-  RESULT_FILE: 'result-deployment.yaml'
-  WORKER_FILE: 'worker-deployment.yaml'
-
-pool:
-  name: Default
+  imageName: vote
+  tag: $(Build.BuildId)
+  dockerRegistryServiceConnection: 'dockeracr'  # 👈 replace with your ACR connection name
+  containerRegistry: chiomaacr.azurecr.io
+  gitUsername: $(GITHUB_USERNAME)   # define in pipeline UI
+  gitToken: $(GITHUB_TOKEN)         # define in pipeline UI
 
 stages:
+- stage: BuildAndPush
+  jobs:
+  - job: Build
+    pool:
+      name: Default  # your self-hosted agent pool
+    steps:
+    - checkout: app_code  # this checks out the code from example-vote-app repo
 
-  # -------------------------------------- #
-  #  Stage 1: Build and Push Docker Images #
-  # -------------------------------------- #
-  - stage: BuildAndPush
-    displayName: "Build and Push Docker Images"
-    condition: succeeded()
-    jobs:
-      - job: BuildImages
-        steps:
-          - checkout: self
-          - checkout: voting-app
-            path: voting-app
+    - task: Docker@2
+      displayName: Build and Push Docker image
+      inputs:
+        containerRegistry: $(dockerRegistryServiceConnection)
+        repository: $(imageName)
+        command: buildAndPush
+        Dockerfile: app_code/vote/Dockerfile
+        tags: |
+          $(tag)
 
-          - script: |
-              echo "🧪 Verifying Dockerfile paths:"
-              find $(Build.SourcesDirectory)/../voting-app -name Dockerfile
-            displayName: "Debug Dockerfile Paths"
+- stage: UpdateK8sYaml
+  dependsOn: BuildAndPush
+  jobs:
+  - job: PatchYAML
+    pool:
+      name: Default
+    steps:
+    - task: Bash@3
+      inputs:
+        targetType: inline
+        script: |
+          git config --global user.email "chiomavanessa8@gmail.com"
+          git config --global user.name "$(gitUsername)"
 
-          - task: Docker@2
-            displayName: "Build and Push 'vote'"
-            inputs:
-              containerRegistry: 'dockeracr'
-              repository: 'vote'
-              command: 'buildAndPush'
-              Dockerfile: '$(Build.SourcesDirectory)/../voting-app/vote/Dockerfile'
-              buildContext: '$(Build.SourcesDirectory)/../voting-app/vote'
-              tags: |
-                $(IMAGE_TAG)
-                latest
+          git clone https://$(gitUsername):$(gitToken)@github.com/chiomanwanedo/k8s-specifications.git
+          cd k8s-specifications
 
-          - task: Docker@2
-            displayName: "Build and Push 'result'"
-            inputs:
-              containerRegistry: 'dockeracr'
-              repository: 'result'
-              command: 'buildAndPush'
-              Dockerfile: '$(Build.SourcesDirectory)/../voting-app/result/Dockerfile'
-              buildContext: '$(Build.SourcesDirectory)/../voting-app/result'
-              tags: |
-                $(IMAGE_TAG)
-                latest
+          echo "🔧 Patching vote-deployment.yaml with new image tag..."
+          sed -i "s|image: .*/vote:.*|image: $(containerRegistry)/vote:$(tag)|" vote-deployment.yaml
 
-          - task: Docker@2
-            displayName: "Build and Push 'worker'"
-            inputs:
-              containerRegistry: 'dockeracr'
-              repository: 'worker'
-              command: 'buildAndPush'
-              Dockerfile: '$(Build.SourcesDirectory)/../voting-app/worker/Dockerfile'
-              buildContext: '$(Build.SourcesDirectory)/../voting-app/worker'
-              tags: |
-                $(IMAGE_TAG)
-                latest
-
-  # -------------------------------------- #
-  #  Stage 2: Update Kubernetes Manifests  #
-  # -------------------------------------- #
-  - stage: UpdateManifests
-    displayName: "Update K8s Manifests & Push"
-    dependsOn: BuildAndPush
-    condition: succeeded()
-    jobs:
-      - job: UpdateYaml
-        steps:
-          - checkout: self
-          - checkout: voting-app
-            path: voting-app
-
-          - script: |
-              echo "🔧 Updating image tags to :$(IMAGE_TAG)"
-              sed -i "s#chiomaacr.azurecr.io/vote:.*#chiomaacr.azurecr.io/vote:$(IMAGE_TAG)#g" $(Build.SourcesDirectory)/../voting-app/$REPO_PATH/$VOTE_FILE
-              sed -i "s#chiomaacr.azurecr.io/result:.*#chiomaacr.azurecr.io/result:$(IMAGE_TAG)#g" $(Build.SourcesDirectory)/../voting-app/$REPO_PATH/$RESULT_FILE
-              sed -i "s#chiomaacr.azurecr.io/worker:.*#chiomaacr.azurecr.io/worker:$(IMAGE_TAG)#g" $(Build.SourcesDirectory)/../voting-app/$REPO_PATH/$WORKER_FILE
-
-              echo "🔍 Showing manifest diff:"
-              git -C $(Build.SourcesDirectory)/../voting-app diff $REPO_PATH/
-            displayName: "Update Image Tags in YAML Files"
-
-          - script: |
-              cd $(Build.SourcesDirectory)/../voting-app
-              git config user.email "chiomavanessa8@gmail.com"
-              git config user.name "chiomanwanedo"
-
-              git checkout main
-
-              echo "🔐 GITHUB_USERNAME: $GITHUB_USERNAME"
-              echo "🔐 GITHUB_TOKEN length: ${#GITHUB_TOKEN}"
-
-              git remote set-url origin https://$GITHUB_USERNAME:$GITHUB_TOKEN@github.com/chiomanwanedo/example-voting-app.git
-
-              git add $REPO_PATH/*.yaml
-              git commit -m "Update image tags to :$(IMAGE_TAG) [skip ci]" || echo "No changes to commit"
-              git push origin main
-            displayName: "Commit and Push Updated YAML Files"
-            env:
-              GITHUB_USERNAME: $GITHUB_USERNAME
-              GITHUB_TOKEN: $GITHUB_TOKEN
-
-  # -------------------------------------- #
-  #  Stage 3: Deploy to Kubernetes Cluster #
-  # -------------------------------------- #
-  - stage: DeployToK8s
-    displayName: "Deploy Updated YAMLs to Kubernetes"
-    dependsOn: UpdateManifests
-    condition: succeeded()
-    jobs:
-      - job: DeployK8s
-        steps:
-          - checkout: self
-          - checkout: voting-app
-            path: voting-app
-
-          - script: |
-              mkdir -p ~/.kube
-              echo "$KUBECONFIG_CONTENT" > ~/.kube/config
-              chmod 600 ~/.kube/config
-            displayName: "Set Up Kubeconfig"
-
-          - script: |
-              for f in $REPO_PATH/$VOTE_FILE $REPO_PATH/$RESULT_FILE $REPO_PATH/$WORKER_FILE; do
-                echo "🚀 Applying: $(Build.SourcesDirectory)/../voting-app/$f"
-                kubectl apply -f $(Build.SourcesDirectory)/../voting-app/$f || { echo "⚠️ Retry: $f"; sleep 5; kubectl apply -f $(Build.SourcesDirectory)/../voting-app/$f; }
-              done
-            displayName: "Apply Updated Manifests to Cluster"
+          git add vote-deployment.yaml
+          git commit -m "Update vote image to :$(tag) [skip ci]"
+          git push
