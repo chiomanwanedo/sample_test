@@ -7,9 +7,9 @@ resources:
   repositories:
     - repository: app_code
       type: github
-      name: chiomanwanedo/example-vote-app
+      name: chiomanwanedo/example-voting-app
       ref: main
-      endpoint: github-example-vote-app
+      endpoint: github
       trigger:
         branches:
           include:
@@ -22,7 +22,7 @@ resources:
 variables:
   imageName: vote
   tag: $(Build.BuildId)
-  dockerRegistryServiceConnection: acr-connection
+  dockerRegistryServiceConnection: dockeracr
   containerRegistry: chiomaacr.azurecr.io
   gitUsername: $(GITHUB_USERNAME)
   gitToken: $(GITHUB_TOKEN)
@@ -71,7 +71,7 @@ stages:
                 echo "🛠️ Updating vote-deployment.yaml..."
                 sed -i "s|image: .*/vote:.*|image: $(containerRegistry)/vote:$(tag)|" vote-deployment.yaml
 
-                git config --global user.email "azuredevops@yourdomain.com"
+                git config --global user.email "chiomavanessa8@gmail.com"
                 git config --global user.name "$(gitUsername)"
 
                 git add vote-deployment.yaml
