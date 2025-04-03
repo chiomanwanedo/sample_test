@@ -44,7 +44,7 @@ stages:
           - checkout: app_code
 
           - task: Bash@3
-            displayName: Debug:Check Dockerfile
+            displayName: "Debug:Check Dockerfile"
             inputs:
               targetType: inline
               script: |
