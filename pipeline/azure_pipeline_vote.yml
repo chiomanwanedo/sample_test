@@ -1,59 +1,80 @@
-trigger:
-  branches:
-    include:
-      - main
+---
+name: vote-pipeline-$(Date:yyyyMMdd)$(Rev:.r)
+
+trigger: none
 
 resources:
   repositories:
-    - repository: apprepo
+    - repository: app_code
       type: github
       name: chiomanwanedo/example-voting-app
       ref: main
-      endpoint: github.com_chiomanwanedo
+      endpoint: github
+      trigger:
+        branches:
+          include:
+            - main
+        paths:
+          include:
+            - example-voting-app/vote/**
 
 variables:
-  IMAGE_TAG: $(Build.BuildId)
+  imageName: vote
+  tag: $(Build.BuildId)
+  dockerRegistryServiceConnection: dockeracr
+  containerRegistry: chiomaacr.azurecr.io
+  gitUsername: $(GITHUB_USERNAME)
+  gitToken: $(GITHUB_TOKEN)
 
 stages:
   - stage: BuildAndPush
-    displayName: Build and Push Docker Images to ACR
     jobs:
-      - job: PushImages
-        displayName: Build & Push vote, result, and worker
+      - job: Build
         pool:
-          name: Default  # Replace with your agent pool if needed
+          name: Default
         steps:
-          - checkout: apprepo  # ✅ Removed path to avoid double nesting
+          - checkout: app_code
+
+          - task: Bash@3
+            displayName: "Debug: Check Dockerfile"
+            inputs:
+              targetType: inline
+              script: |
+                echo "🔍 Checking Dockerfile..."
+                ls -l "$(Build.SourcesDirectory)/app_code/example-voting-app/vote/Dockerfile"
 
           - task: Docker@2
-            displayName: Build and Push 'vote' image
+            displayName: Build and Push Docker image
             inputs:
-              containerRegistry: 'dockeracr'  # Replace with your ACR connection
-              repository: 'vote'
-              command: 'buildAndPush'
-              Dockerfile: 'vote/Dockerfile'
-              buildContext: 'vote'
+              containerRegistry: $(dockerRegistryServiceConnection)
+              repository: $(imageName)
+              command: buildAndPush
+              Dockerfile: "$(Build.SourcesDirectory)/app_code/example-voting-app/vote/Dockerfile"
               tags: |
-                $(IMAGE_TAG)
+                $(tag)
 
-          - task: Docker@2
-            displayName: Build and Push 'result' image
+  - stage: UpdateK8sYaml
+    dependsOn: BuildAndPush
+    jobs:
+      - job: PatchYAML
+        pool:
+          name: Default
+        steps:
+          - task: Bash@3
+            displayName: Patch vote-deployment.yaml
             inputs:
-              containerRegistry: 'dockeracr'
-              repository: 'result'
-              command: 'buildAndPush'
-              Dockerfile: 'result/Dockerfile'
-              buildContext: 'result'
-              tags: |
-                $(IMAGE_TAG)
+              targetType: inline
+              script: |
+                git config --global user.email "chiomavanessa8@gmail.com"
+                git config --global user.name "$(gitUsername)"
 
-          - task: Docker@2
-            displayName: Build and Push 'worker' image
-            inputs:
-              containerRegistry: 'dockeracr'
-              repository: 'worker'
-              command: 'buildAndPush'
-              Dockerfile: 'worker/Dockerfile'
-              buildContext: 'worker'
-              tags: |
-                $(IMAGE_TAG)
+                echo "🔁 Cloning k8s-specifications repo..."
+                git clone https://$(gitUsername):$(gitToken)@github.com/chiomanwanedo/k8s-specifications.git
+                cd k8s-specifications
+
+                echo "🛠️ Updating vote-deployment.yaml..."
+                sed -i "s|image: .*/vote:.*|image: $(containerRegistry)/vote:$(tag)|" vote-deployment.yaml
+
+                git add vote-deployment.yaml
+                git commit -m "Update vote image to :$(tag) [skip ci]"
+                git push
