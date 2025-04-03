@@ -17,6 +17,7 @@ resources:
         paths:
           include:
             - vote/**
+            - k8s-specifications/**
 
 variables:
   imageName: vote
@@ -65,15 +66,13 @@ stages:
             inputs:
               targetType: inline
               script: |
-                git config --global user.email "chiomavanessa8@gmail.com"
-                git config --global user.name "$(gitUsername)"
-
-                echo "🔁 Cloning k8s-specifications repo..."
-                git clone https://$(gitUsername):$(gitToken)@github.com/chiomanwanedo/k8s-specifications.git
-                cd k8s-specifications
+                cd $(Build.SourcesDirectory)/k8s-specifications
 
                 echo "🛠️ Updating vote-deployment.yaml..."
                 sed -i "s|image: .*/vote:.*|image: $(containerRegistry)/vote:$(tag)|" vote-deployment.yaml
+
+                git config --global user.email "chiomavanessa8@gmail.com"
+                git config --global user.name "$(gitUsername)"
 
                 git add vote-deployment.yaml
                 git commit -m "Update vote image to :$(tag) [skip ci]"
