@@ -1,7 +1,14 @@
 ---
-name: vote-pipeline-$(Date:yyyyMMdd)$(Rev:.r)
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - vote/**
+      - k8s-specifications/vote-deployment.yaml
 
-trigger: none
+name: vote-pipeline-$(Date:yyyyMMdd)$(Rev:.r)
 
 resources:
   repositories:
@@ -66,7 +73,7 @@ stages:
             inputs:
               targetType: inline
               script: |
-                cd $(Build.SourcesDirectory)/example-voting-app/k8s-specifications
+                cd $(Build.SourcesDirectory)/k8s-specifications
 
                 echo "🛠️ Updating vote-deployment.yaml..."
                 sed -i "s|image: .*/vote:.*|image: $(containerRegistry)/vote:$(tag)|" vote-deployment.yaml
