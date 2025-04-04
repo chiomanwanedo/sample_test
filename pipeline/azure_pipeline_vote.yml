@@ -69,7 +69,7 @@ stages:
           inputs:
             targetType: inline
             script: |
-              echo "🔍 Checking for k8s-specifications directory..."
+              echo "🔍 Checking for example-voting-app/k8s-specifications directory..."
               ls -la example-voting-app/k8s-specifications || echo "❌ Directory not found"
 
               echo "🔍 Checking for vote-deployment.yaml..."
