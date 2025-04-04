@@ -1,0 +1,85 @@
+---
+name: worker-pipeline-$(Date:yyyyMMdd)$(Rev:.r)
+
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - worker/**
+      - k8s-specifications/worker-deployment.yaml
+
+variables:
+  imageName: worker
+  tag: $(Build.BuildId)
+  containerRegistry: chiomaacr.azurecr.io
+  gitUsername: $(GITHUB_USERNAME)
+  gitToken: $(GITHUB_TOKEN)
+
+stages:
+  - stage: BuildAndPush
+    jobs:
+      - job: Build
+        pool:
+          name: Default
+        steps:
+          - checkout: self
+
+          - task: Bash@3
+            displayName: "🔁 Clone example-voting-app repo"
+            inputs:
+              targetType: inline
+              script: |
+                git clone https://$(gitUsername):$(gitToken)@github.com/chiomanwanedo/example-voting-app.git
+
+          - task: Bash@3
+            displayName: "🔍 Check Dockerfile location"
+            inputs:
+              targetType: inline
+              script: |
+                echo "🔍 Checking Dockerfile for worker service..."
+                ls -l example-voting-app/worker/Dockerfile
+
+          - task: Docker@2
+            displayName: "🐳 Build and Push Docker image for worker"
+            inputs:
+              containerRegistry: dockeracr
+              repository: $(imageName)
+              command: buildAndPush
+              Dockerfile: "$(Build.SourcesDirectory)/example-voting-app/worker/Dockerfile"
+              tags: |
+                $(tag)
+
+  - stage: PatchK8sYAML
+    dependsOn: BuildAndPush
+    jobs:
+      - job: PatchYAML
+        pool:
+          name: Default
+        steps:
+          - checkout: self
+
+          - task: Bash@3
+            displayName: "📥 Clone app repo again for patching"
+            inputs:
+              targetType: inline
+              script: |
+                git clone https://$(gitUsername):$(gitToken)@github.com/chiomanwanedo/example-voting-app.git
+
+          - task: Bash@3
+            displayName: "🛠️ Patch worker-deployment.yaml"
+            inputs:
+              targetType: inline
+              script: |
+                cd example-voting-app/k8s-specifications
+
+                echo "🔧 Updating image tag for worker..."
+                sed -i "s|image: .*/worker:.*|image: $(containerRegistry)/worker:$(tag)|" worker-deployment.yaml
+
+                git config --global user.email "chiomavanessa8@gmail.com"
+                git config --global user.name "chiomanwanedo"
+
+                git add worker-deployment.yaml
+                git commit -m "Update worker image to :$(tag) [skip ci]" || echo "✅ No changes to commit"
+                git push https://$(gitUsername):$(gitToken)@github.com/chiomanwanedo/example-voting-app.git HEAD:main
