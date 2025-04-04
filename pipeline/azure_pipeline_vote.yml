@@ -65,29 +65,31 @@ stages:
         - checkout: self
 
         - task: Bash@3
-          displayName: "🐛 Debug: Ensure repo and YAML file exist"
+          displayName: "🐛 Debug: Clone & Check vote-deployment.yaml"
           inputs:
             targetType: inline
             script: |
-              echo "📥 Cloning app repo..."
-              git clone https://$(gitUsername):$(gitToken)@github.com/chiomanwanedo/example-voting-app.git
+              echo "📥 Cloning example-voting-app repo..."
+              git clone https://$(GITHUB_USERNAME):$(GITHUB_TOKEN)@github.com/chiomanwanedo/example-voting-app.git
 
-              echo "🔍 Checking for YAML file:"
-              ls -la example-voting-app/k8s-specifications/vote-deployment.yaml || echo "❌ YAML file not found"
+              echo "📁 Checking if vote-deployment.yaml exists..."
+              ls -l example-voting-app/k8s-specifications/vote-deployment.yaml || echo "❌ Not found"
 
         - task: Bash@3
-          displayName: "🛠️ Patch vote-deployment.yaml"
+          displayName: "🛠️ Patch vote-deployment.yaml and Push"
           inputs:
             targetType: inline
             script: |
               cd example-voting-app/k8s-specifications
 
               echo "🔧 Updating image tag..."
-              sed -i "s|image: .*/vote:.*|image: $(containerRegistry)/vote:$(tag)|" vote-deployment.yaml
+              sed -i "s|image: .*/vote:.*|image: chiomaacr.azurecr.io/vote:$(Build.BuildId)|" vote-deployment.yaml
 
               git config --global user.email "chiomavanessa8@gmail.com"
               git config --global user.name "chiomanwanedo"
 
               git add vote-deployment.yaml
-              git commit -m "Update vote image to :$(tag) [skip ci]" || echo "✅ No changes to commit"
-              git push https://$(gitUsername):$(gitToken)@github.com/chiomanwanedo/example-voting-app.git HEAD:main
+              git commit -m "Update vote image to :$(Build.BuildId) [skip ci]" || echo "✅ No changes to commit"
+
+              echo "🔐 Pushing patched file..."
+              git push https://$(GITHUB_USERNAME):$(GITHUB_TOKEN)@github.com/chiomanwanedo/example-voting-app.git HEAD:main
