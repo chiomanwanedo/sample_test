@@ -65,15 +65,15 @@ stages:
         - checkout: self
 
         - task: Bash@3
-          displayName: "🐛 Debug: Check vote-deployment.yaml exists"
+          displayName: "🐛 Debug: Ensure repo and YAML file exist"
           inputs:
             targetType: inline
             script: |
-              echo "🔍 Checking for example-voting-app/k8s-specifications directory..."
-              ls -la example-voting-app/k8s-specifications || echo "❌ Directory not found"
+              echo "📥 Cloning app repo..."
+              git clone https://$(gitUsername):$(gitToken)@github.com/chiomanwanedo/example-voting-app.git
 
-              echo "🔍 Checking for vote-deployment.yaml..."
-              ls -l example-voting-app/k8s-specifications/vote-deployment.yaml || echo "❌ File not found"
+              echo "🔍 Checking for YAML file:"
+              ls -la example-voting-app/k8s-specifications/vote-deployment.yaml || echo "❌ YAML file not found"
 
         - task: Bash@3
           displayName: "🛠️ Patch vote-deployment.yaml"
@@ -90,4 +90,4 @@ stages:
 
               git add vote-deployment.yaml
               git commit -m "Update vote image to :$(tag) [skip ci]" || echo "✅ No changes to commit"
-              git push origin HEAD:main
+              git push https://$(gitUsername):$(gitToken)@github.com/chiomanwanedo/example-voting-app.git HEAD:main
