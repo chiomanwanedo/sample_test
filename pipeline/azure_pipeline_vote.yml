@@ -3,12 +3,16 @@ trigger:
   branches:
     include:
       - main
-  paths:
-    include:
-      - vote/**
-      - k8s-specifications/vote-deployment.yaml
 
 name: vote-pipeline-$(Date:yyyyMMdd)$(Rev:.r)
+
+resources:
+  repositories:
+    - repository: app_code
+      type: github
+      name: chiomanwanedo/example-voting-app
+      ref: main
+      endpoint: github
 
 variables:
   imageName: vote
@@ -24,23 +28,22 @@ stages:
         pool:
           name: Default
         steps:
-          - checkout: self
+          - checkout: app_code
 
           - task: Bash@3
-            displayName: "📁 Tree: Show folder structure"
+            displayName: "📁 Tree: Show app_code folder structure"
             inputs:
               targetType: inline
               script: |
-                echo "📁 Showing all files under Build.SourcesDirectory:"
-                find "$(Build.SourcesDirectory)" -type f
+                echo "📁 Showing all files in app_code:"
+                find "$(Build.SourcesDirectory)/app_code" -type f
 
           - task: Bash@3
-            displayName: "Debug:Check Dockerfile"
+            displayName: "🔍 Debug: Check vote Dockerfile"
             inputs:
               targetType: inline
               script: |
-                echo "🔍 Checking Dockerfile location..."
-                ls -l "$(Build.SourcesDirectory)/vote/Dockerfile"
+                ls -l "$(Build.SourcesDirectory)/app_code/vote/Dockerfile"
 
           - task: Docker@2
             displayName: Build and Push Docker image
@@ -48,7 +51,7 @@ stages:
               containerRegistry: dockeracr
               repository: $(imageName)
               command: buildAndPush
-              Dockerfile: "$(Build.SourcesDirectory)/vote/Dockerfile"
+              Dockerfile: "$(Build.SourcesDirectory)/app_code/vote/Dockerfile"
               tags: |
                 $(tag)
 
@@ -64,7 +67,7 @@ stages:
             inputs:
               targetType: inline
               script: |
-                cd "$(Build.SourcesDirectory)/k8s-specifications"
+                cd "$(Build.SourcesDirectory)/app_code/k8s-specifications"
 
                 echo "🛠️ Updating vote-deployment.yaml..."
                 sed -i "s|image: .*/vote:.*|image: $(containerRegistry)/vote:$(tag)|" vote-deployment.yaml
