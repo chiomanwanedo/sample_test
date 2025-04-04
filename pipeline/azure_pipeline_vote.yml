@@ -5,8 +5,8 @@ trigger:
       - main
   paths:
     include:
-      - vote/**
-      - k8s-specifications/vote-deployment.yaml
+      - example-voting-app/vote/**
+      - example-voting-app/k8s-specifications/vote-deployment.yaml
 
 name: vote-pipeline-$(Date:yyyyMMdd)$(Rev:.r)
 
@@ -14,7 +14,7 @@ resources:
   repositories:
     - repository: app_code
       type: github
-      name: chiomanwanedo/example-voting-app
+      name: chiomanwanedo/example-vote-app
       ref: main
       endpoint: github
       trigger:
@@ -23,8 +23,8 @@ resources:
             - main
         paths:
           include:
-            - vote/**
-            - k8s-specifications/**
+            - example-voting-app/vote/**
+            - example-voting-app/k8s-specifications/**
 
 variables:
   imageName: vote
@@ -48,7 +48,7 @@ stages:
               targetType: inline
               script: |
                 echo "🔍 Checking Dockerfile location..."
-                ls -l "$(Build.SourcesDirectory)/app_code/vote/Dockerfile"
+                ls -l "$(Build.SourcesDirectory)/app_code/example-voting-app/vote/Dockerfile"
 
           - task: Docker@2
             displayName: Build and Push Docker image
@@ -56,7 +56,7 @@ stages:
               containerRegistry: dockeracr
               repository: $(imageName)
               command: buildAndPush
-              Dockerfile: "$(Build.SourcesDirectory)/app_code/vote/Dockerfile"
+              Dockerfile: "$(Build.SourcesDirectory)/app_code/example-voting-app/vote/Dockerfile"
               tags: |
                 $(tag)
 
@@ -72,7 +72,7 @@ stages:
             inputs:
               targetType: inline
               script: |
-                cd "$(Build.SourcesDirectory)/app_code/k8s-specifications"
+                cd "$(Build.SourcesDirectory)/app_code/example-voting-app/k8s-specifications"
 
                 echo "🛠️ Updating vote-deployment.yaml..."
                 sed -i "s|image: .*/vote:.*|image: $(containerRegistry)/vote:$(tag)|" vote-deployment.yaml
