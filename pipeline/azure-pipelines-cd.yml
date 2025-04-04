@@ -1,42 +1,85 @@
+---
 trigger:
   branches:
     include:
       - main
+  paths:
+    include:
+      - vote/**
+      - k8s-specifications/vote-deployment.yaml
 
-pool:
-  name: Default  # your self-hosted agent pool
+name: vote-pipeline-$(Date:yyyyMMdd)$(Rev:.r)
+
+resources:
+  repositories:
+    - repository: app_code
+      type: github
+      name: chiomanwanedo/example-voting-app
+      ref: main
+      endpoint: github
+      trigger:
+        branches:
+          include:
+            - main
+        paths:
+          include:
+            - vote/**
+            - k8s-specifications/**
 
 variables:
-  IMAGE_TAG: $(Build.BuildId)
-  REPO_PATH: 'k8s-specifications'
-  VOTE_FILE: 'vote-deployment.yaml'
-  RESULT_FILE: 'result-deployment.yaml'
-  WORKER_FILE: 'worker-deployment.yaml'
+  imageName: vote
+  tag: $(Build.BuildId)
+  containerRegistry: chiomaacr.azurecr.io
+  gitUsername: $(GITHUB_USERNAME)
+  gitToken: $(GITHUB_TOKEN)
 
 stages:
-  - stage: UpdateK8sManifests
-    displayName: Update Kubernetes Image Tags
+  - stage: BuildAndPush
     jobs:
-      - job: CommitManifests
-        displayName: Update and Push Kubernetes YAML
+      - job: Build
+        pool:
+          name: Default
         steps:
-          - checkout: self
+          - checkout: app_code
 
-          - script: |
-              echo "🔧 Updating image tags to :$IMAGE_TAG in YAML files..."
+          - task: Bash@3
+            displayName: "Debug:Check Dockerfile"
+            inputs:
+              targetType: inline
+              script: |
+                echo "🔍 Checking Dockerfile location..."
+                ls -l "$(Build.SourcesDirectory)/app_code/vote/Dockerfile"
 
-              sed -i "s#chiomaacr.azurecr.io/vote:.*#chiomaacr.azurecr.io/vote:$IMAGE_TAG#g" $REPO_PATH/$VOTE_FILE
-              sed -i "s#chiomaacr.azurecr.io/result:.*#chiomaacr.azurecr.io/result:$IMAGE_TAG#g" $REPO_PATH/$RESULT_FILE
-              sed -i "s#chiomaacr.azurecr.io/worker:.*#chiomaacr.azurecr.io/worker:$IMAGE_TAG#g" $REPO_PATH/$WORKER_FILE
+          - task: Docker@2
+            displayName: Build and Push Docker image
+            inputs:
+              containerRegistry: dockeracr
+              repository: $(imageName)
+              command: buildAndPush
+              Dockerfile: "$(Build.SourcesDirectory)/app_code/vote/Dockerfile"
+              tags: |
+                $(tag)
 
-              echo "✅ YAML files updated:"
-              git diff
-            displayName: 'Update YAML with New Image Tags'
+  - stage: UpdateK8sYaml
+    dependsOn: BuildAndPush
+    jobs:
+      - job: PatchYAML
+        pool:
+          name: Default
+        steps:
+          - task: Bash@3
+            displayName: "Patch vote-deployment.yaml"
+            inputs:
+              targetType: inline
+              script: |
+                cd "$(Build.SourcesDirectory)/app_code/k8s-specifications"
 
-          - script: |
-              git config user.email "chiomavanessa8@gmail.com"
-              git config user.name "chiomanwanedo"
-              git add $REPO_PATH/*.yaml
-              git commit -m "Update image tags to :$IMAGE_TAG [CI skip]" || echo "No changes to commit"
-              git push origin main
-            displayName: 'Commit and Push Changes to GitHub'
+                echo "🛠️ Updating vote-deployment.yaml..."
+                sed -i "s|image: .*/vote:.*|image: $(containerRegistry)/vote:$(tag)|" vote-deployment.yaml
+
+                git config --global user.email "chiomavanessa8@gmail.com"
+                git config --global user.name "$(gitUsername)"
+
+                git add vote-deployment.yaml
+                git commit -m "Update vote image to :$(tag) [skip ci]"
+                git push

@@ -1,27 +1,8 @@
-trigger: none
-
-resources:
+tresources:
   repositories:
-    - repository: voting-app
+    - repository: app_code
       type: github
-      name: chiomanwanedo/example-voting-app   # ✅ Must match your GitHub repo
-      endpoint: github                         # ✅ Your GitHub service connection
-
-pool:
-  name: Default  # Your self-hosted agent pool
-
-jobs:
-  - job: VerifyGitHubRepoCheckout
-    displayName: "Test Checkout of GitHub Repo"
-    steps:
-      - checkout: self
-      - checkout: voting-app
-        path: example-voting-app
-
-      - script: |
-          echo "🌍 Current working directory: $(pwd)"
-          echo "📁 Workspace contents:"
-          ls -al
-          echo "📂 Recursive tree of everything:"
-          find . -type f | sort
-        displayName: "🧪 Show full workspace contents"
+      trigger:
+        paths:
+          include:
+            - example-vote-app/vote/**
