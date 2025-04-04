@@ -14,7 +14,7 @@ resources:
   repositories:
     - repository: app_code
       type: github
-      name: chiomanwanedo/example-vote-app
+      name: chiomanwanedo/example-voting-app
       ref: main
       endpoint: github
       trigger:
