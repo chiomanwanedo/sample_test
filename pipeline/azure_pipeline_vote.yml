@@ -50,6 +50,14 @@ stages:
                 echo "🔍 Checking Dockerfile location..."
                 ls -l "$(Build.SourcesDirectory)/app_code/example-voting-app/vote/Dockerfile"
 
+          - task: Bash@3
+            displayName: "📁 Tree: Show folder structure"
+            inputs:
+              targetType: inline
+              script: |
+                echo "📁 Showing structure under $(Build.SourcesDirectory)/app_code"
+                find "$(Build.SourcesDirectory)/app_code" -type f      
+
           - task: Docker@2
             displayName: Build and Push Docker image
             inputs:
