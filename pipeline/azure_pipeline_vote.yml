@@ -6,14 +6,6 @@ trigger:
 
 name: vote-pipeline-$(Date:yyyyMMdd)$(Rev:.r)
 
-resources:
-  repositories:
-    - repository: app_code
-      type: github
-      name: chiomanwanedo/example-voting-app
-      ref: main
-      endpoint: github
-
 variables:
   imageName: vote
   tag: $(Build.BuildId)
@@ -28,30 +20,38 @@ stages:
         pool:
           name: Default
         steps:
-          - checkout: app_code
+          - checkout: self
 
           - task: Bash@3
-            displayName: "📁 Tree: Show app_code folder structure"
+            displayName: "🔁 Clone example-voting-app repo"
             inputs:
               targetType: inline
               script: |
-                echo "📁 Showing all files in app_code:"
-                find "$(Build.SourcesDirectory)/app_code" -type f
+                echo "🔐 Cloning app repo..."
+                git clone https://$(gitUsername):$(gitToken)@github.com/chiomanwanedo/example-voting-app.git
 
           - task: Bash@3
-            displayName: "🔍 Debug: Check vote Dockerfile"
+            displayName: "📁 Tree: Show structure of cloned repo"
             inputs:
               targetType: inline
               script: |
-                ls -l "$(Build.SourcesDirectory)/app_code/vote/Dockerfile"
+                echo "📁 Contents of cloned app repo:"
+                find example-voting-app -type f
+
+          - task: Bash@3
+            displayName: "🔍 Check Dockerfile location"
+            inputs:
+              targetType: inline
+              script: |
+                ls -l example-voting-app/vote/Dockerfile
 
           - task: Docker@2
-            displayName: Build and Push Docker image
+            displayName: "🐳 Build and Push Docker image"
             inputs:
               containerRegistry: dockeracr
               repository: $(imageName)
               command: buildAndPush
-              Dockerfile: "$(Build.SourcesDirectory)/app_code/vote/Dockerfile"
+              Dockerfile: "$(Build.SourcesDirectory)/example-voting-app/vote/Dockerfile"
               tags: |
                 $(tag)
 
@@ -67,7 +67,7 @@ stages:
             inputs:
               targetType: inline
               script: |
-                cd "$(Build.SourcesDirectory)/app_code/k8s-specifications"
+                cd example-voting-app/k8s-specifications
 
                 echo "🛠️ Updating vote-deployment.yaml..."
                 sed -i "s|image: .*/vote:.*|image: $(containerRegistry)/vote:$(tag)|" vote-deployment.yaml
