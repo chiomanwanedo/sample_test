@@ -58,23 +58,36 @@ stages:
   - stage: UpdateK8sYaml
     dependsOn: BuildAndPush
     jobs:
-      - job: PatchYAML
-        pool:
-          name: Default
-        steps:
-          - task: Bash@3
-            displayName: "Patch vote-deployment.yaml"
-            inputs:
-              targetType: inline
-              script: |
-                cd example-voting-app/k8s-specifications
+    - job: PatchYAML
+      pool:
+        name: Default
+      steps:
+        - checkout: self
 
-                echo "🛠️ Updating vote-deployment.yaml..."
-                sed -i "s|image: .*/vote:.*|image: $(containerRegistry)/vote:$(tag)|" vote-deployment.yaml
+        - task: Bash@3
+          displayName: "🐛 Debug: Check vote-deployment.yaml exists"
+          inputs:
+            targetType: inline
+            script: |
+              echo "🔍 Checking for k8s-specifications directory..."
+              ls -la example-voting-app/k8s-specifications || echo "❌ Directory not found"
 
-                git config --global user.email "chiomavanessa8@gmail.com"
-                git config --global user.name "$(gitUsername)"
+              echo "🔍 Checking for vote-deployment.yaml..."
+              ls -l example-voting-app/k8s-specifications/vote-deployment.yaml || echo "❌ File not found"
 
-                git add vote-deployment.yaml
-                git commit -m "Update vote image to :$(tag) [skip ci]"
-                git push
+        - task: Bash@3
+          displayName: "🛠️ Patch vote-deployment.yaml"
+          inputs:
+            targetType: inline
+            script: |
+              cd example-voting-app/k8s-specifications
+
+              echo "🔧 Updating image tag..."
+              sed -i "s|image: .*/vote:.*|image: $(containerRegistry)/vote:$(tag)|" vote-deployment.yaml
+
+              git config --global user.email "chiomavanessa8@gmail.com"
+              git config --global user.name "chiomanwanedo"
+
+              git add vote-deployment.yaml
+              git commit -m "Update vote image to :$(tag) [skip ci]" || echo "✅ No changes to commit"
+              git push origin HEAD:main
